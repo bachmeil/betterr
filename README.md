@@ -157,7 +157,7 @@ ldmd2 -i program.d $(LINK)
 
 # Speed
 
-You might expect this to be slow. After all, you're running interpreted R code, which defeats the purpose of using R. The short answer is that it's unlikely to be slow and it's unlikely to defeat the purpose of using R. The long answer [can be found here](https://bachmeil.github.io/betterr/efficiency.html).
+You might expect this to be slow. After all, you're running interpreted R code, which defeats the purpose of using D. The short answer is that it's unlikely to be slow and it doesn't defeat the purpose of using D. The long answer [can be found here](https://bachmeil.github.io/betterr/efficiency.html).
 
 
 
