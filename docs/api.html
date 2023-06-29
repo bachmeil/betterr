@@ -1,0 +1,322 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>api</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#r-api">R API</a>
+<ul>
+<li><a href="#constants">Constants</a></li>
+<li><a href="#probability-distributions">Probability distributions</a></li>
+<li><a href="#special-functions">Special functions</a></li>
+<li><a href="#a-few-others">A few others</a></li>
+<li><a href="#working-with-robj">Working with Robj</a>
+<ul>
+<li><a href="#basics">Basics</a></li>
+<li><a href="#protecting-objects-from-the-r-garbage-collector">Protecting objects from the R garbage collector</a></li>
+<li><a href="#copying-an-object">Copying an object</a></li>
+<li><a href="#scalar-conversions">Scalar conversions</a></li>
+<li><a href="#getting-and-setting-attributes-on-r-objects">Getting and setting attributes on R objects</a></li>
+<li><a href="#creating-a-string-inside-r">Creating a string inside R</a></li>
+<li><a href="#create-an-r-object-that-represents-a-particular-symbol">Create an R object that represents a particular symbol</a></li>
+<li><a href="#working-with-s4-slots">Working with S4 slots</a></li>
+<li><a href="#special-values">Special values</a></li>
+<li><a href="#pointers-to-the-array-holding-data-inside-an-robj">Pointers to the array holding data inside an Robj</a></li>
+<li><a href="#get-the-length-of-an-r-object-and-the-number-of-rows-or-columns-of-a-matrix">Get the length of an R object and the number of rows or columns of a matrix</a></li>
+<li><a href="#convert-d-data-structures-to-robj-and-vice-versa">Convert D data structures to Robj and vice versa</a></li>
+<li><a href="#place-objects-into-r">Place objects into R</a></li>
+<li><a href="#evaluating-r-code">Evaluating R code</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="r-api">R API</h1>
+<p>There are some useful bits pulled from the R API. They are imported as part of the betterr.r module.</p>
+<h2 id="constants">Constants</h2>
+<p>Documentation is <a href="https://rstudio.github.io/r-manuals/r-exts/The-R-API.html#mathematical-constants">here</a>.</p>
+<pre><code>immutable double M_E
+immutable double M_LOG2E
+immutable double M_LOG10E
+immutable double M_LN2
+immutable double M_LN10 
+immutable double M_PI
+immutable double M_2PI
+immutable double M_PI_2
+immutable double M_PI_4
+immutable double M_1_PI
+immutable double M_2_PI
+immutable double M_2_SQRTPI
+immutable double M_SQRT2
+immutable double M_SQRT1_2
+immutable double M_SQRT_3
+immutable double M_SQRT_32
+immutable double M_LOG10_2
+immutable double M_SQRT_PI
+immutable double M_1_SQRT_2PI
+immutable double M_SQRT_2dPI
+immutable double M_LN_SQRT_PI
+immutable double M_LN_SQRT_2PI
+immutable double M_LN_SQRT_PId2</code></pre>
+<h2 id="probability-distributions">Probability distributions</h2>
+<p>These are C functions, but they work in most cases similar to the R versions. Documentation is <a href="https://rstudio.github.io/r-manuals/r-exts/The-R-API.html#distribution-functions">here</a>.</p>
+<pre><code>/** Same arguments as the R functions */ 
+double dnorm4(double x, double mu, double sigma, int give_log);
+double pnorm(double x, double mu, double sigma, int lower_tail, int log_p);
+double qnorm(double p, double mu, double sigma, int lower_tail, int log_p);
+void pnorm_both(double x, double * cum, double * ccum, int i_tail, int log_p); /* both tails */
+/* i_tail in {0,1,2} means: &quot;lower&quot;, &quot;upper&quot;, or &quot;both&quot; :
+   if(lower) return *cum := P[X &lt;= x]
+   if(upper) return *ccum := P[X &gt; x] = 1 - P[X &lt;= x] */
+
+/** Same arguments as the R functions */ 
+double dunif(double x, double a, double b, int give_log);
+double punif(double x, double a, double b, int lower_tail, int log_p);
+double qunif(double p, double a, double b, int lower_tail, int log_p);
+
+/** These do not allow for passing argument rate as in R 
+    Confirmed that otherwise you call them the same as in R */
+double dgamma(double x, double shape, double scale, int give_log);
+double pgamma(double q, double shape, double scale, int lower_tail, int log_p);
+double qgamma(double p, double shape, double scale, int lower_tail, int log_p);
+      
+/** Unless otherwise noted from here down, if the argument
+ *  name is the same as it is in R, the argument is the same.
+ *  Some R arguments are not available in C */
+double dbeta(double x, double shape1, double shape2, int give_log);
+double pbeta(double q, double shape1, double shape2, int lower_tail, int log_p);
+double qbeta(double p, double shape1, double shape2, int lower_tail, int log_p);
+
+/** Use these if you want to set ncp as in R */
+double dnbeta(double x, double shape1, double shape2, double ncp, int give_log);
+double pnbeta(double q, double shape1, double shape2, double ncp, int lower_tail, int log_p);
+double qnbeta(double p, double shape1, double shape2, double ncp, int lower_tail, int log_p);
+
+double dlnorm(double x, double meanlog, double sdlog, int give_log);
+double plnorm(double q, double meanlog, double sdlog, int lower_tail, int log_p);
+double qlnorm(double p, double meanlog, double sdlog, int lower_tail, int log_p);
+
+double dchisq(double x, double df, int give_log);
+double pchisq(double q, double df, int lower_tail, int log_p);
+double qchisq(double p, double df, int lower_tail, int log_p);
+
+double dnchisq(double x, double df, double ncp, int give_log);
+double pnchisq(double q, double df, double ncp, int lower_tail, int log_p);
+double qnchisq(double p, double df, double ncp, int lower_tail, int log_p);
+
+double df(double x, double df1, double df2, int give_log);
+double pf(double q, double df1, double df2, int lower_tail, int log_p);
+double qf(double p, double df1, double df2, int lower_tail, int log_p);
+
+double dnf(double x, double df1, double df2, double ncp, int give_log);
+double pnf(double q, double df1, double df2, double ncp, int lower_tail, int log_p);
+double qnf(double p, double df1, double df2, double ncp, int lower_tail, int log_p);
+
+double dt(double x, double df, int give_log);
+double pt(double q, double df, int lower_tail, int log_p);
+double qt(double p, double df, int lower_tail, int log_p);
+
+double dnt(double x, double df, double ncp, int give_log);
+double pnt(double q, double df, double ncp, int lower_tail, int log_p);
+double qnt(double p, double df, double ncp, int lower_tail, int log_p);
+
+double dbinom(double x, double size, double prob, int give_log);
+double pbinom(double q, double size, double prob, int lower_tail, int log_p);
+double qbinom(double p, double size, double prob, int lower_tail, int log_p);
+
+double dcauchy(double x, double location, double scale, int give_log);
+double pcauchy(double q, double location, double scale, int lower_tail, int log_p);
+double qcauchy(double p, double location, double scale, int lower_tail, int log_p);
+      
+/** scale = 1/rate */
+double dexp(double x, double scale, int give_log);
+double pexp(double q, double scale, int lower_tail, int log_p);
+double qexp(double p, double scale, int lower_tail, int log_p);
+
+double dgeom(double x, double prob, int give_log);
+double pgeom(double q, double prob, int lower_tail, int log_p);
+double qgeom(double p, double prob, int lower_tail, int log_p);
+
+double dhyper(double x, double m, double n, double k, int give_log);
+double phyper(double q, double m, double n, double k, int lower_tail, int log_p);
+double qhyper(double p, double m, double n, double k, int lower_tail, int log_p);
+
+double dnbinom(double x, double size, double prob, int give_log);
+double pnbinom(double q, double size, double prob, int lower_tail, int log_p);
+double qnbinom(double p, double size, double prob, int lower_tail, int log_p);
+
+double dnbinom_mu(double x, double size, double mu, int give_log);
+double pnbinom_mu(double q, double size, double mu, int lower_tail, int log_p);
+
+double dpois(double x, double lambda, int give_log);
+double ppois(double x, double lambda, int lower_tail, int log_p);
+double qpois(double p, double lambda, int lower_tail, int log_p);
+
+double dweibull(double x, double shape, double scale, int give_log);
+double pweibull(double q, double shape, double scale, int lower_tail, int log_p);
+double qweibull(double p, double shape, double scale, int lower_tail, int log_p);
+
+double dlogis(double x, double location, double scale, int give_log);
+double plogis(double q, double location, double scale, int lower_tail, int log_p);
+double qlogis(double p, double location, double scale, int lower_tail, int log_p);
+
+double ptukey(double q, double nranges, double nmeans, double df, int lower_tail, int log_p);
+double qtukey(double p, double nranges, double nmeans, double df, int lower_tail, int log_p);</code></pre>
+<h2 id="special-functions">Special functions</h2>
+<p>The documentation for these functions <a href="https://rstudio.github.io/r-manuals/r-exts/The-R-API.html#mathematical-functions">can be found here</a>.</p>
+<pre><code>double gammafn(double);
+double lgammafn(double);
+double lgammafn_sign(double, int *);
+double digamma(double);
+double trigamma(double);
+double tetragamma(double);
+double pentagamma(double);
+double beta(double, double);
+double lbeta(double, double);
+double choose(double, double);
+double lchoose(double, double);
+double bessel_i(double, double, double);
+double bessel_j(double, double);
+double bessel_k(double, double, double);
+double bessel_y(double, double);
+double bessel_i_ex(double, double, double, double *);
+double bessel_j_ex(double, double, double *);
+double bessel_k_ex(double, double, double, double *);
+double bessel_y_ex(double, double, double *);</code></pre>
+<h2 id="a-few-others">A few others</h2>
+<pre><code>/** Calculate exp(x)-1 for small x */
+double expm1(double);
+      
+/** Calculate log(1+x) for small x */
+double log1p(double);
+      
+/** Returns 1 for positive, 0 for zero, -1 for negative */
+double sign(double x);
+      
+/** |x|*sign(y)
+ *  Gives x the same sign as y
+ */   
+double fsign(double x, double y);
+      
+/** R&#39;s signif() function */
+double fprec(double x, double digits);
+      
+/** R&#39;s round() function */
+double fround(double x, double digits);
+      
+/** Truncate towards zero */
+double ftrunc(double x);</code></pre>
+<h2 id="working-with-robj">Working with Robj</h2>
+<p>The struct that holds all R data is called <code>Robj</code>, for “R object”. If you want low-level access for performance reasons, you may want some helper functions for working with Robj structs.</p>
+<h3 id="basics">Basics</h3>
+<pre><code>void Rf_PrintValue(Robj x);
+int Rf_isArray(Robj x);
+int Rf_isInteger(Robj x);
+int Rf_isList(Robj x);
+int Rf_isLogical(Robj x);
+int Rf_isMatrix(Robj x);
+int Rf_isNull(Robj x);
+int Rf_isNumber(Robj x);
+int Rf_isNumeric(Robj x);
+int Rf_isReal(Robj x);
+int Rf_isVector(Robj x);
+int Rf_isVectorList(Robj x);</code></pre>
+<h3 id="protecting-objects-from-the-r-garbage-collector">Protecting objects from the R garbage collector</h3>
+<ul>
+<li><code>Robj Rf_protect(Robj x)</code></li>
+<li><code>Robj Rf_unprotect(int n)</code>: Unprotect the n most recent protected objects.</li>
+<li><code>Robj Rf_unprotect_ptr(Robj x)</code>: Unprotect a specific object.</li>
+</ul>
+<h3 id="copying-an-object">Copying an object</h3>
+<ul>
+<li><code>Robj Rf_duplicate(Robj x)</code></li>
+</ul>
+<h3 id="scalar-conversions">Scalar conversions</h3>
+<pre><code>double Rf_asReal(Robj x);
+int Rf_asInteger(Robj x);
+Robj Rf_ScalarReal(double x);
+Robj Rf_ScalarInteger(int x);
+Robj Rf_ScalarLogical(int x);</code></pre>
+<p>There are also these functions:</p>
+<pre><code>double scalar(Robj rx)
+double scalar(T: double)(Robj rx)
+int scalar(T: int)(Robj rx)
+long scalar(T: long)(Robj rx)
+ulong scalar(T: ulong)(Robj rx)
+string scalar(T: string)(Robj rx)
+double scalar(string name)
+double scalar(T: double)(string name)
+int scalar(T: int)(string name)
+long scalar(T: long)(string name)
+ulong scalar(T: ulong)(string name)
+string scalar(T: string)(string name)</code></pre>
+<h3 id="getting-and-setting-attributes-on-r-objects">Getting and setting attributes on R objects</h3>
+<pre><code>Robj Rf_getAttrib(Robj x, Robj attr);
+Robj Rf_setAttrib(Robj x, Robj attr, Robj val);</code></pre>
+<h3 id="creating-a-string-inside-r">Creating a string inside R</h3>
+<ul>
+<li><code>Robj Rf_mkString(const char * str)</code></li>
+</ul>
+<h3 id="create-an-r-object-that-represents-a-particular-symbol">Create an R object that represents a particular symbol</h3>
+<ul>
+<li><code>Robj Rf_install(const char * sym)</code></li>
+<li><code>Robj RSymbol(string sym)</code>: Easier than <code>Rf_install</code> because you can pass a string.</li>
+</ul>
+<h3 id="working-with-s4-slots">Working with S4 slots</h3>
+<pre><code>Robj R_do_slot(Robj obj, Robj symbol);
+Robj R_do_slot_assign(Robj obj, Robj symbol, Robj value);
+Robj R_has_slot(Robj obj, Robj symbol);</code></pre>
+<h3 id="special-values">Special values</h3>
+<ul>
+<li><code>RNil</code>: R NULL</li>
+<li><code>Robj RTrue()</code>: Mostly used as a flag passed to C functions.</li>
+<li><code>Robj RFalse()</code></li>
+<li><code>R_DimSymbol</code>: R object that refers to the “dim” symbol.</li>
+<li><code>R_GlobalEnv</code>: R object that refers to the global environment.</li>
+</ul>
+<h3 id="pointers-to-the-array-holding-data-inside-an-robj">Pointers to the array holding data inside an Robj</h3>
+<pre><code>double * REAL(Robj x);
+int * INTEGER(Robj x);
+const(char) * R_CHAR(Robj x);
+int * LOGICAL(Robj x);</code></pre>
+<h3 id="get-the-length-of-an-r-object-and-the-number-of-rows-or-columns-of-a-matrix">Get the length of an R object and the number of rows or columns of a matrix</h3>
+<pre><code>int Rf_length(Robj x);
+int Rf_ncols(Robj x);
+int Rf_nrows(Robj x);</code></pre>
+<h3 id="convert-d-data-structures-to-robj-and-vice-versa">Convert D data structures to Robj and vice versa</h3>
+<pre><code>Robj robj(double x)
+Robj robj(double[] v)
+Robj robj(int x)
+Robj robj(string s)
+Robj robj(string[] sv)
+string toString(Robj cstr)
+string toString(Robj sv, int ii)
+string[] stringArray(Robj sv)
+string[] stringArray(string name)</code></pre>
+<h3 id="place-objects-into-r">Place objects into R</h3>
+<pre><code>void toR(T)(T x, string name)
+void toR(Robj x, string name)
+void toR(string[] s, string name)</code></pre>
+<h3 id="evaluating-r-code">Evaluating R code</h3>
+<ul>
+<li><code>Robj evalR(string cmd)</code>: Evaluate <code>cmd</code> inside R and return an Robj, a pointer to the data.</li>
+<li><code>void evalRQ(string cmd)</code>: Evaluate <code>cmd</code> inside R but return nothing.</li>
+<li><code>void evalRQ(string[] cmds)</code>: Evaluate all of the commands in <code>cmds</code> one at a time, returning nothing.</li>
+</ul>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

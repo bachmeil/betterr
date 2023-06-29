@@ -1,0 +1,27 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>funcptr</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="passing-function-pointers-around">Passing function pointers around</h1>
+<p>It is possible to pass data pointers and function pointers to R. Since all data in R has to be in the form of an Robj, you need to use functions to do the conversions from pointer to Robj and vice versa. The primary reason you’d want to do this is if you need to pass a function to be evaluated to R.</p>
+<p>For instance, consider R’s optimization routines. If you want to use the algorithms underlying <code>optim</code>, you can access the C functions directly. If, on the other hand, you want to call <code>constrOptim</code>, there’s no way to do that without writing the objective function and gradient function in R. This is precisely the case where you want to use a compiled language. The evaluation of the objective function is potentially expensive, and it may be called many times as it iterates to convergence, and many solutions may be needed (think about bootstrapping).</p>
+<p>The usual approach to compiled functions in R is to create a shared library, load the library, and call it from R using <code>.Call</code>. You can avoid the need to create a shared library by passing pointers to the objective function and the data into R, then having a C function that uses those pointers to call the function using the data as an argument.</p>
+<p>The package <a href="https://github.com/bachmeil/r-funcptr">funcptr</a> handles the messy part for you. That package can be installed using devtools. You can see examples of its usage in testing/testfunptr.d.</p>
+<p>Note that this is not something I’ve done often, so while the example works, there’s not a lot of documentation. You’re on your own if you don’t understand how C function pointers and casting them works.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

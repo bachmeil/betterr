@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>evalr</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="evaluating-arbitrary-r-code">Evaluating arbitrary R code</h1>
+<p>One of the nice features of this library is that it provides a set of data structures that are sufficient to work with most of the output from functions inside R. There are two ways to evaluate code. The first is with <code>evalR</code>. It runs the code you’ve specified and returns the output as an Robj struct (which is how ALL data in R is stored). You could do the following:</p>
+<pre><code>Robj x = evalR(&quot;rnorm(15)&quot;);</code></pre>
+<p><code>x</code> would hold a Robj struct with a pointer to the output of that command. There are two problems with using this primitive approach:</p>
+<ul>
+<li>The storage for the output of <code>rnorm(15)</code> was allocated by R. Since R has no way to know what you’re doing with the data inside your D program, it could be reclaimed by the garbage collector at any time. You could wrap the <code>evalR</code> command like this: <code>Rf_protect(evalR("rnorm(15)"))</code>. That would prevent R from ever collecting the data, so to prevent a memory leak, you’d need a corresponding call <code>Rf_unprotect_ptr(x)</code> or <code>Rf_unprotect(1)</code>. See <a href="https://rstudio.github.io/r-manuals/r-exts/System-and-foreign-language-interfaces.html#handling-the-effects-of-garbage-collection">the R extensions manual</a> for further information. The bottom line is that this is messy. You’re having to manually manage memory <em>on top of a garbage collector</em>.</li>
+<li>In addition to the above, you don’t have easy access to the elements of the array. The better way to deal with both is to use the provided <code>Vector</code> struct. In other words, you can do this</li>
+</ul>
+<pre><code>auto x = Vector(&quot;rnorm(15)&quot;);</code></pre>
+<p>The <code>Vector</code> struct uses reference counting to handle the memory management for you, and it allows convenient access to the data, for instance:</p>
+<pre><code>double x1 = x[1];
+x[2] = 4.9;</code></pre>
+<p>The other way to evaluate R code is with <code>evalRQ</code>. This is much simpler, because it does not return anything. One example is printing something to the screen:</p>
+<pre><code>evalRQ(`print(&quot;This was printed by R&quot;)`);</code></pre>
+<p>It’s also useful for intermediate results. Maybe you are reading in a big dataset and you only need one variable.</p>
+<pre><code>evalRQ(`data.raw &lt;- read.csv(&quot;file.csv&quot;)
+auto x = Vector(&quot;data.raw[,2]&quot;);</code></pre>
+<p><code>evalRQ</code> was used to read in the data, then <code>Vector</code> was used to acquire a pointer to the variable you want to work with in D.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

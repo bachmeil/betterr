@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>compiling</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="compilation">Compilation</h1>
+<p>You need to make the betterr modules available for import, and you need to link to <code>libR.so</code> and <code>libRInside.so</code>.</p>
+<p>What works easiest for me is to create a subdirectory named betterr and create a symbolic link in there to all the betterr modules. <code>libR.so</code> should by default be in a standard location, so the linker should be able to find it without a path using the usual gcc syntax <code>-lR</code>. In contrast, <code>libRInside.so</code> will almost certainly not be in a standard location, so you <em>will</em> need to provide the full path. This is what compilation looks like on my Ubuntu 22.04 machine:</p>
+<pre><code>ldmd2 -i program.d -L/usr/lib/R/library/RInside/lib/libRInside.so -L-lR</code></pre>
+<h2 id="finding-librinside.so">Finding libRInside.so</h2>
+<p>If you’re not sure where to find <code>libRInside.so</code>, you can run this command in the terminal:</p>
+<pre><code>R -s -e &#39;cat(paste0(find.package(&quot;RInside&quot;), &quot;/lib/libRInside.so\n&quot;))&#39;</code></pre>
+<p>You can copy and paste the output into the Makefile. Alternatively, you can run this command inside R:</p>
+<pre><code>find.package(&quot;RInside&quot;)</code></pre>
+<p>It’s in the /lib subdirectory relative to that directory. On my system, the call to <code>find.package</code> returns</p>
+<pre><code>[1] &quot;/usr/lib/R/library/RInside&quot;</code></pre>
+<p>which translates into the linker directive above.</p>
+<h2 id="finding-matrix.so">Finding Matrix.so</h2>
+<p>If you’re wanting to do low-level linear algebra operations for performance reasons (probably not the case), you’ll need to link to Matrix.so. You can find its location by running this command in the terminal:</p>
+<pre><code>R -s -e &#39;cat(paste0(find.package(&quot;Matrix&quot;), &quot;/libs/Matrix.so\n&quot;))&#39;</code></pre>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

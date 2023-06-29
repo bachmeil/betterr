@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>quadprog</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#quadprog">quadprog</a></li>
+</ul>
+</div>
+<h1 id="quadprog">quadprog</h1>
+<p>This module gives direct access to the Fortran routine in the <a href="https://cran.r-project.org/web/packages/quadprog/">R quadprog package</a> underlying the function <code>solve.QP</code>. It solves quadratic programming problems subject to linear constraints. As it calls straight into the shared library, no R code is executed.</p>
+<p>Its use is demonstrated by the program testing/testqp.d. That program implements the solution to the example problem in the manual using D.</p>
+<p>Compilation requires linking to quadprog.so. You can find the full path of that library by running this command in R:</p>
+<pre><code>paste0(find.package(&quot;quadprog&quot;), &quot;/libs/quadprog.so&quot;)</code></pre>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>lazycopy</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="r-lazy-copying">R lazy copying</h1>
+<p>For performance reasons, R delays copying as long as possible. Consider this code:</p>
+<pre><code>x &lt;- rnorm(10)
+y &lt;- x</code></pre>
+<p>There is no reason for R to copy the elements of <code>x</code> into <code>y</code> at this point. It is sufficient - and much faster - for <code>y</code> to hold a reference to <code>x</code>. If this is the only thing that’s ever done with <code>y</code></p>
+<pre><code>print(y[4])
+print(y[7])</code></pre>
+<p>there is no reason to ever make a copy of <code>x</code>, because a reference is just fine until there’s mutation of <code>x</code> or <code>y</code>. This is a problem if you’re working with <code>y</code> from D. If you did the above, and then you changed the elements of <code>y</code> from inside a D function, you’d actually be changing the elements of both <code>x</code> and <code>y</code>, because there’s nothing that triggers the copy.</p>
+<p>The library handles all of this for you. If you’re doing the calls to R yourself, though, you’ll have to account for it. One way is to use braces when you do the copy. Here’s an example for a matrix:</p>
+<pre><code>m &lt;- matrix(1:4, ncol=2)
+mm &lt;- m[]</code></pre>
+<p>Or you can do an assignment after creating <code>mm</code>:</p>
+<pre><code>m &lt;- matrix(1:4, ncol=2)
+mm &lt;- m
+mm[1,1] &lt;- mm[1,1]</code></pre>
+<p>As soon as you do the assignment, <code>mm</code> is no longer a reference. You can see an example of this in testing/memory.d.</p>
+<h2 id="additional-reading">Additional reading</h2>
+<p><a href="https://rstudio.github.io/r-manuals/r-exts/System-and-foreign-language-interfaces.html#finding-and-setting-variables">Finding and setting variables</a></p>
+<p><a href="https://rstudio.github.io/r-manuals/r-exts/System-and-foreign-language-interfaces.html#named-objects-and-copying">Named objects and copying</a></p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

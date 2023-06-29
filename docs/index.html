@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>index</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="d-as-a-better-r">D as a Better R</h1>
+<p>This project is a collection of things I’ve been doing over the last decade to connect R and D. Although I released an earlier project called embedr, even writing a blog post about it for the D blog, that project only made available a fraction of the things I’d done to that point.</p>
+<p>In addition, while the interoperability went in both directions (D calling R functions and R calling D functions) the focus was primarily on support for writing D functions that would be called from R. I don’t have an opinion on whether that was the right thing to do, but over time I have come to the conclusion that I want to write my programs in D, but without having to give up the functionality of R.</p>
+<p>The starting point for interoperability is data sharing. That meant I needed to have a way to create, access, and manipulate the main R data structures from D and R. I’d need to work with data frames, vectors, matrices, lists, and so on from my D program, but importantly, I needed them to be available to R at the same time. This was not a trivial undertaking. You need three things for this to be practical:</p>
+<ul>
+<li>Allocation of the data structures. This is fairly easy. You can send some code to R and capture a pointer to the data, or you can call functions in libR.so, the shared library written in C and Fortran that R uses internally.</li>
+<li>Releasing the data structures to the R garbage collector when they’re no longer in use. It’s easy to <em>protect</em> objects from the garbage collector. What’s more difficult is to recognize when they’re no longer needed and remove the protection. Failure to unprotect creates a memory leak, and unprotecting too soon results in segfaults. I’ve implemented a reference counting approach to handle all of the memory management issues. To my knowledge, all of the bugs have been worked out. It’s been a long time since I had any issues related to memory.</li>
+<li>Convenient access to the data from within D. Working out the allocation and garbage collection for matrix isn’t terribly helpful if you still need to work with individual elements using pointer arithmetic. It’s only sustainable if you have syntax like <code>m[1,4] = 3.2</code>, <code>m[2..6, 0..3] = 4.0</code>, and <code>m[1,3..$]</code>. Once you have that, you can build on it with things like <code>Row(m,2) = [3.6, -1.1, -2.4, 4.8]</code>. Any one of these conveniences doesn’t take much time to implement on its own, but there are many of them, and comprehensively testing them all is a slow process for a side project.</li>
+</ul>
+<p>Please note that I view this as <em>sharing my work</em> rather than <em>releasing a library</em>. I’m showing you what has worked for me, giving you the details of my workflow, but it’s not polished like a well-run open source project. Maybe others will see the value and pitch in. If not, well, I’ll continue to use it and update it as I do. I’m largely indifferent on adoption, but I would be happy someone else found it valuable.</p>
+<h1 id="better-r">Better R?</h1>
+<p>Walter Bright has referred to a particular use case for D as “better C”, sometimes jokingly calling it <a href="https://dlang.org/blog/2018/06/11/dasbetterc-converting-make-c-to-d/">DasBetterC</a>. Although the use case is somewhat different, the name “better R” is a reasonable description of what I’m doing with this project:</p>
+<ul>
+<li>All of R is available to a D program (you can run arbitrary R code, capture the output, and access it from D, most of the time without any copying).</li>
+<li>You can rewrite R programs in D, sprinkling in D features where they add convenience or speed.</li>
+<li>You can modify the behavior of R where you don’t like it. One of the things I wish R did differently is dropping dimensions. A row of a matrix will silently become a vector, with a completely different interpretation. That doesn’t happen when I access the matrix from D.</li>
+<li>You add D’s static typing to R. You can’t imagine how good that is given that R is not only a dynamic language, but that it was developed at the same place that gave us C. (Both were created at Bell Labs. The first release of S was four years after the first release of C. Both of them having single-letter names was not an accident.)</li>
+<li>You can use D’s compile time features on top of a vanilla R program.</li>
+</ul>
+<h1 id="getting-started">Getting Started</h1>
+<p>Probably the best way to figure out what is going on is to look at the example and then look at the tests linked in the next section. After that, you can read the other documentation. You can also start a discussion on the Github repo if you have questions or wonder how to do something.</p>
+<p>In the meantime, here’s a short example to give you an idea of what to expect:</p>
+<pre><code>void main() {
+  // Initialization
+  startR();
+  // Generate 100 draws from a N(0.5, sd=0.1) distribution
+  Vector x = rnorm(100, 0.5, 0.1);
+  // Create a 3x2 matrix and fill the columns
+  auto m = Matrix(3,2);
+  Column(m,0) = [1.1, 2.2, 3.3];
+  Column(m,1) = [4.4, 5.5, 6.6];
+  // Calculate the inverse of the transpose
+  auto m2 = solve(t(m));
+  // Modify the second and third elements of the first column of m
+  m[1..$,0] = [7.7, 8.8];
+  // Choose x and y to minimize x^2 + y^2
+  // Use Nelder-Mead with initial guesses 3.5 and -5.5
+  auto nm = NelderMead(&amp;f);
+  OptimSolution sol = nm.solve([3.5, -5.5]);
+  // Clean up
+  closeR();
+}
+
+extern(C) {
+  double f(int n, double * par, void * ex) {
+    return par[0]*par[0] + par[1]*par[1];
+  }
+}</code></pre>
+<h1 id="usage">Usage</h1>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="compiling.html">Compiling</a></li>
+<li><a href="example.html">Example</a></li>
+<li><a href="https://github.com/bachmeil/betterr/tree/main/testing">Tests demonstrating most of the functionality</a></li>
+</ul>
+<h1 id="modules">Modules</h1>
+<ul>
+<li><a href="base.html">betterr.baser</a></li>
+<li><a href="matrix.html">betterr.matrix</a></li>
+<li><a href="vector.html">betterr.vector</a></li>
+<li><a href="random.html">betterr.random</a></li>
+<li><a href="ts.html">betterr.ts</a></li>
+<li><a href="optim.html">betterr.optim</a></li>
+<li><a href="plot.html">betterr.plot</a></li>
+<li><a href="array.html">betterr.array</a></li>
+<li><a href="dataframe.html">betterr.dataframe</a></li>
+<li><a href="list.html">betterr.list</a></li>
+<li><a href="lm.html">betterr.lm</a></li>
+<li><a href="api.html">Pieces of the R API</a></li>
+<li><a href="quadprog.html">Quadratic programming</a></li>
+</ul>
+<h1 id="notes-on-various-topics">Notes on Various Topics</h1>
+<ul>
+<li><a href="evalr.html">Evaluating arbitrary R code</a></li>
+<li><a href="databases.html">Accessing databases</a></li>
+<li><a href="randomscalar.html">Generating scalar random variables efficiently</a></li>
+<li><a href="prng.html">Parallel random number generation</a></li>
+<li><a href="parallelrun.html">Running Better R programs in parallel</a></li>
+<li><a href="openblas.html">Using OpenBLAS for matrix calculations</a></li>
+<li><a href="matrixpackage.html">Calling the Matrix package from D</a></li>
+<li><a href="setvar.html">Passing an existing variable from D into R</a></li>
+<li><a href="lazycopy.html">R lazy copying</a></li>
+<li><a href="arglists.html">Understanding argument lists in the R source</a></li>
+<li><a href="funcptr.html">Passing function pointers around</a></li>
+</ul>
+<h1 id="thoughts">Thoughts</h1>
+<ul>
+<li><a href="efficiency.html">Efficiency</a></li>
+<li><a href="scaling.html">Scaling to Zero</a></li>
+</ul>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

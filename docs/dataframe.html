@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>dataframe</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#dataframe">DataFrame</a></li>
+<li><a href="#datafile">DataFile</a></li>
+<li><a href="#comments">Comments</a></li>
+</ul>
+</div>
+<h1 id="dataframe">DataFrame</h1>
+<p>The DataFrame struct is, at this time, primarily used to store data read in from a file.</p>
+<h1 id="datafile">DataFile</h1>
+<p>The DataFile struct is used to read in data from a file. At this time, it only reads in data from .csv files.</p>
+<p>Example code:</p>
+<pre><code>auto df = DataFile(&quot;unrate.csv&quot;);
+DataFrame unrate = df.read();
+unrate.print(&quot;Unemployment rate, monthly, Jan 2022-Jan 2023&quot;);</code></pre>
+<h1 id="comments">Comments</h1>
+<p>DataFrame and DataFile are currently works in progress. There is no point introducing a design that is just a thin wrapper over calling R directly. You can already do that with evalR.</p>
+<p>DataFile is a higher priority than DataFrame, because R supports reading data from many formats, and then that data can be changed from DataFrame to other data structures.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

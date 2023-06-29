@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>vector</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#vector">Vector</a></li>
+<li><a href="#functionality">Functionality</a>
+<ul>
+<li><a href="#construction">Construction</a>
+<ul>
+<li><a href="#thisstring-code">this(string code)</a></li>
+<li><a href="#thislong-r">this(long r)</a></li>
+<li><a href="#void-initializelong-r">void initialize(long r)</a></li>
+<li><a href="#thisvector-v">this(Vector v)</a></li>
+<li><a href="#thisrdata-rd">this(RData rd)</a></li>
+<li><a href="#thisdouble-v">this(double[] v)</a></li>
+<li><a href="#thislong-v">this(long[] v)</a></li>
+<li><a href="#thisint-v">this(int[] v)</a></li>
+</ul></li>
+<li><a href="#indexing">Indexing</a>
+<ul>
+<li><a href="#double-opindexlong-r">double opIndex(long r)</a></li>
+<li><a href="#vector-opindexlong-obs">Vector opIndex(long[] obs)</a></li>
+<li><a href="#void-opindexassigndouble-v-long-r">void opIndexAssign(double v, long r)</a></li>
+</ul></li>
+<li><a href="#assignment">Assignment</a>
+<ul>
+<li><a href="#void-opassignvector-v">void opAssign(Vector v)</a></li>
+<li><a href="#void-opassigndouble-v">void opAssign(double[] v)</a></li>
+</ul></li>
+<li><a href="#slicing">Slicing</a>
+<ul>
+<li><a href="#vector-opslicelong-i-long-j">Vector opSlice(long i, long j)</a></li>
+<li><a href="#vector-opslice">Vector opSlice()</a></li>
+</ul></li>
+<li><a href="#range-support">Range support</a></li>
+<li><a href="#miscellaneous-functions">Miscellaneous functions</a>
+<ul>
+<li><a href="#double-last">double last()</a></li>
+<li><a href="#long-opdollar">long opDollar()</a></li>
+<li><a href="#void-printstring-msg">void print(string msg="")</a></li>
+<li><a href="#long-length">long length()</a></li>
+<li><a href="#bool-empty">bool empty()</a></li>
+<li><a href="#double-front">double front()</a></li>
+<li><a href="#void-popfront">void popFront()</a></li>
+<li><a href="#matrix-matrix">Matrix matrix()</a></li>
+<li><a href="#matrix-rowmatrix">Matrix rowMatrix()</a></li>
+<li><a href="#double-opcastt-double">double[] opCast(T: double[])()</a></li>
+<li><a href="#vector-opbinarystring-opvector-v">Vector opBinary(string op)(Vector v)</a></li>
+<li><a href="#vector-headvector-v-long-n6">Vector head(Vector v, long n=6)</a></li>
+<li><a href="#vector-tailvector-v-long-n6">Vector tail(Vector v, long n=6)</a></li>
+</ul></li>
+<li><a href="#struct-fill">struct Fill</a></li>
+<li><a href="#struct-partialfill">struct PartialFill</a></li>
+<li><a href="#struct-intvector">struct IntVector</a></li>
+<li><a href="#struct-boolvector">struct BoolVector</a></li>
+<li><a href="#struct-stringvector">struct StringVector</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="vector">Vector</h1>
+<p>A <code>Vector</code> is a struct that holds information about a vector that has been allocated inside R. The data is:</p>
+<pre><code>long rows;
+RData data;
+double * ptr;</code></pre>
+<h1 id="functionality">Functionality</h1>
+<h2 id="construction">Construction</h2>
+<h3 id="thisstring-code">this(string code)</h3>
+<h3 id="thislong-r">this(long r)</h3>
+<h3 id="void-initializelong-r">void initialize(long r)</h3>
+<p>This is used for assigning to a zero-length Vector. Otherwise there is no way to assign to a Vector that is part of a struct that has already been constructed, since the bounds checking will fail.</p>
+<h3 id="thisvector-v">this(Vector v)</h3>
+<p>Makes a copy in R, but forces the allocation of a new Vector.</p>
+<h3 id="thisrdata-rd">this(RData rd)</h3>
+<p>Makes a copy in R, but forces the allocation of a new Vector.</p>
+<h3 id="thisdouble-v">this(double[] v)</h3>
+<h3 id="thislong-v">this(long[] v)</h3>
+<h3 id="thisint-v">this(int[] v)</h3>
+<h2 id="indexing">Indexing</h2>
+<h3 id="double-opindexlong-r">double opIndex(long r)</h3>
+<p>Get one element. Indexing starts at zero.</p>
+<h3 id="vector-opindexlong-obs">Vector opIndex(long[] obs)</h3>
+<p>Return a new vector holding the values at the indexes in <code>obs</code>.</p>
+<h3 id="void-opindexassigndouble-v-long-r">void opIndexAssign(double v, long r)</h3>
+<p>Assign to the element at index r.</p>
+<h2 id="assignment">Assignment</h2>
+<h3 id="void-opassignvector-v">void opAssign(Vector v)</h3>
+<p>Checks that the number of elements match. The exception is if there are zero rows, which is taken to mean this has not been initialized. Will allocate the vector and copy the elements of <code>v</code> into it.</p>
+<h3 id="void-opassigndouble-v">void opAssign(double[] v)</h3>
+<p>Checks that the number of elements match. The exception is if there are zero rows, which is taken to mean this has not been initialized. Will allocate the vector and copy the elements of <code>v</code> into it.</p>
+<h2 id="slicing">Slicing</h2>
+<h3 id="vector-opslicelong-i-long-j">Vector opSlice(long i, long j)</h3>
+<p><code>this[0..3]</code> returns a new Vector with three elements. <code>j</code> is not included.</p>
+<h3 id="vector-opslice">Vector opSlice()</h3>
+<p><code>this[]</code> returns a new Vector with all elements of <code>this</code>.</p>
+<h2 id="range-support">Range support</h2>
+<p>A <code>Vector</code> is a range. You can do this type of thing:</p>
+<pre><code>auto v = Vector([1.1, 2.2, 3.3]);
+
+foreach(val; Vector([1.1, 2.2, 3.3])) {
+    writeln(val);
+}
+
+import std.range: enumerate;
+foreach(ii, val; Vector([1.1, 2.2, 3.3]).enumerate) {
+    writeln(ii+1, &quot; &quot;, val);
+}</code></pre>
+<h2 id="miscellaneous-functions">Miscellaneous functions</h2>
+<h3 id="double-last">double last()</h3>
+<p>The last value</p>
+<h3 id="long-opdollar">long opDollar()</h3>
+<p>Allows you to do <code>v[3..$]</code></p>
+<h3 id="void-printstring-msg">void print(string msg="")</h3>
+<h3 id="long-length">long length()</h3>
+<h3 id="bool-empty">bool empty()</h3>
+<h3 id="double-front">double front()</h3>
+<h3 id="void-popfront">void popFront()</h3>
+<h3 id="matrix-matrix">Matrix matrix()</h3>
+<p>Returns a Matrix holding the data in this as one column.</p>
+<h3 id="matrix-rowmatrix">Matrix rowMatrix()</h3>
+<p>Returns a Matrix holding the data in this as one row.</p>
+<h3 id="double-opcastt-double">double[] opCast(T: double[])()</h3>
+<p>Convert this to a <code>double[]</code> using std.conv.to:</p>
+<pre><code>auto v = Vector([1.1, 2.2, 3.3]);
+double[] vv = v.to!(double[]);</code></pre>
+<h3 id="vector-opbinarystring-opvector-v">Vector opBinary(string op)(Vector v)</h3>
+<p>Allows element-by-element operations like this:</p>
+<pre><code>auto v = Vector([1.1, 2.2, 3.3]);
+auto v2 = Vector([4.4, 5.5, 6.6]);
+v += v2;
+v -= v2;
+v *= v2;
+v /= v2;</code></pre>
+<h3 id="vector-headvector-v-long-n6">Vector head(Vector v, long n=6)</h3>
+<p>Calls R’s <code>head</code> function. Returns a new Vector of length <code>n</code>. If <code>n</code> is negative, drops <code>n</code> elements from the end, so the length is <code>v.length - n</code>.</p>
+<h3 id="vector-tailvector-v-long-n6">Vector tail(Vector v, long n=6)</h3>
+<p>Calls R’s <code>tail</code> function. Returns a new Vector of length <code>n</code>. If <code>n</code> is negative, drops <code>n</code> elements from the front, so the length is <code>v.length - n</code>.</p>
+<h2 id="struct-fill">struct Fill</h2>
+<p>Used to fill the elements of a Vector. The main case is where you want to refill a Vector inside a loop and you’d like to avoid allocation for performance reasons. Fill is a reference to the Vector.</p>
+<pre><code>auto vraw = Vector(10);
+auto v = Fill(vraw);
+v ~= 1.1;
+v ~= 2.2;
+v ~= 3.3;
+writeln(v.full()); // false, because the capacity is 7
+writeln(v.capacity()); // 7
+v ~= [4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 11.0];
+writeln(v.full()); // true, because the capacity is 0
+v ~= 12.1; // Error, because there&#39;s no place to put another element
+vraw.print(&quot;The vector&quot;); // Work with vraw for anything other than filling
+v.reset(); // Start over without creating garbage and avoiding allocation</code></pre>
+<h2 id="struct-partialfill">struct PartialFill</h2>
+<p>Same as <code>Fill</code>, but in case you only want to work with part of a Vector rather than the whole thing. The main case is where you’re only updating some of the elements inside a loop because you’re either not updating all elements or you’re doing the update in several places.</p>
+<pre><code>auto vraw = Vector(10);
+auto v = PartialFill(vraw, 3, 7); // You only want to fill vraw[3]..vraw[6]</code></pre>
+<h2 id="struct-intvector">struct IntVector</h2>
+<p><code>Vector</code> holds double precision values. <code>IntVector</code> holds integer values.</p>
+<h2 id="struct-boolvector">struct BoolVector</h2>
+<p><code>Vector</code> holds double precision values. <code>BoolVector</code> holds true/false values. Under the covers, since we’re working with C, it holds <code>int</code> values. The interface is designed to feel like you’re working with bool values.</p>
+<pre><code>auto bv = BoolVector(2);
+bv[0] = true;
+bv[1] = false;
+writeln(bv[0]); // true, even though ptr[0] is 1</code></pre>
+<h2 id="struct-stringvector">struct StringVector</h2>
+<p>Create and work with a vector of R strings. Working with the underlying data is messy (they’re C strings, after all). You should work with a <code>StringVector</code> instead of working with the R data directly.</p>
+<pre><code>auto sv = StringVector([&quot;Foo&quot;, &quot;Bar&quot;, &quot;Baz&quot;, &quot;D is kind of cool!&quot;]);
+sv.print(&quot;A string vector&quot;);
+writeln(sv[1]);</code></pre>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>random</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#source-code-and-examples">Source Code and Examples</a></li>
+<li><a href="#structs">Structs</a>
+<ul>
+<li><a href="#sample">Sample</a>
+<ul>
+<li><a href="#data">Data</a></li>
+<li><a href="#methods">Methods</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#functions">Functions</a>
+<ul>
+<li><a href="#rnorm">rnorm</a></li>
+<li><a href="#runif">runif</a></li>
+<li><a href="#rgamma">rgamma</a></li>
+<li><a href="#rbeta">rbeta</a></li>
+<li><a href="#rbinom">rbinom</a></li>
+<li><a href="#rcauchy">rcauchy</a></li>
+<li><a href="#rchisq">rchisq</a></li>
+<li><a href="#rexp">rexp</a></li>
+<li><a href="#rf">rf</a></li>
+<li><a href="#rgeom">rgeom</a></li>
+<li><a href="#rhyper">rhyper</a></li>
+<li><a href="#rlnorm">rlnorm</a></li>
+<li><a href="#rmultinom">rmultinom</a></li>
+<li><a href="#rnbinom">rnbinom</a></li>
+<li><a href="#rpois">rpois</a></li>
+<li><a href="#rt">rt</a></li>
+<li><a href="#rweibull">rweibull</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="overview">Overview</h1>
+<p>Usage:</p>
+<pre><code>import betterr.random;</code></pre>
+<p>This module exposes all of the random number generation function in base R to a D program.</p>
+<h1 id="source-code-and-examples">Source Code and Examples</h1>
+<ul>
+<li><a href="https://github.com/bachmeil/betterr/blob/main/random.d">Source Code</a></li>
+<li><a href="https://github.com/bachmeil/betterr/blob/main/testing/testrandom.d">Examples</a></li>
+</ul>
+<h1 id="structs">Structs</h1>
+<h2 id="sample">Sample</h2>
+<pre><code>struct Sample {
+    Vector x;
+    long size;
+    bool replace = false;
+    Vector prob;
+}</code></pre>
+<h3 id="data">Data</h3>
+<ul>
+<li><code>x</code>: Vector holding the data to be sampled.</li>
+<li><code>size</code>: Number of elements to sample from x.</li>
+<li><code>replace</code>: True if sampling from x is done with replacement.</li>
+<li><code>prob</code>: A vector specifying the probabilities of drawing each of the elements of <code>x</code>.</li>
+</ul>
+<h3 id="methods">Methods</h3>
+<ul>
+<li><code>draw()</code>: Return a vector holding the sample drawn based on the configuration you have specified.</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/base/html/sample.html">R documentation</a></p>
+<h1 id="functions">Functions</h1>
+<h2 id="rnorm">rnorm</h2>
+<p><code>Vector rnorm(long n, double mean=0, double sd=1)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>mean</code></li>
+<li><code>sd</code>: Standard deviation</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Normal.html">rnorm</a></p>
+<h2 id="runif">runif</h2>
+<p><code>Vector runif(long n, double min=0, double max=1)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>min</code></li>
+<li><code>max</code></li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Uniform.html">runif</a></p>
+<h2 id="rgamma">rgamma</h2>
+<p><code>Vector rgamma(long n, double shape, double rate=double.nan, double scale=1.0)</code></p>
+<p>R has named optional parameters. D does not. Set rate to double.nan to leave it unspecified.</p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>shape</code></li>
+<li><code>rate</code></li>
+<li><code>scale</code></li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/GammaDist.html">rgamma</a></p>
+<h2 id="rbeta">rbeta</h2>
+<p><code>Vector rbeta(long n, double shape1, double shape2, double ncp=0.0)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>shape1</code></li>
+<li><code>shape2</code></li>
+<li><code>ncp</code>: Non-centrality parameter</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Beta.html">rbeta</a></p>
+<h2 id="rbinom">rbinom</h2>
+<p><code>Vector rbinom(long n, long size, double prob)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>size</code>: Number of trials</li>
+<li><code>prob</code>: Probability of success on each trial</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Binomial.html">rbinom</a></p>
+<h2 id="rcauchy">rcauchy</h2>
+<p><code>Vector rcauchy(long n, double location=0, double scale=1)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>location</code></li>
+<li><code>scale</code></li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Cauchy.html">rcauchy</a></p>
+<h2 id="rchisq">rchisq</h2>
+<p><code>Vector rchisq(long n, double df, double ncp)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>df</code>: Degrees of freedom (&gt;= 0)</li>
+<li><code>ncp</code>: Non-centrality parameter (&gt;= 0)</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Chisquare.html">rchisq</a></p>
+<h2 id="rexp">rexp</h2>
+<p><code>Vector rexp(long n, double rate=1.0)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>rate</code>: Mean is 1/rate</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Exponential.html">rexp</a></p>
+<h2 id="rf">rf</h2>
+<p><code>Vector rf(long n, long df1, long df2, double ncp)</code><br />
+<code>Vector rf(long n, long df1, long df2)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>df1</code>: First degrees of freedom parameter</li>
+<li><code>df2</code>: Second degrees of freedom parameter</li>
+<li><code>ncp</code>: Non-centrality parameter</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Fdist.html">rf</a></p>
+<h2 id="rgeom">rgeom</h2>
+<p><code>Vector rgeom(T)(long n, T prob)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>prob</code>: A Vector of probabilities or anything that converts to a Vector, including a double[].</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Geometric.html">rgeom</a></p>
+<h2 id="rhyper">rhyper</h2>
+<p><code>Vector rhyper(long nn, long m, long n, long k)</code><br />
+<code>Vector rhyper(Vector nn, long m, long n, long k)</code><br />
+<code>Vector rhyper(long[] nn, long m, long n, long k)</code></p>
+<ul>
+<li><code>nn</code>: Number of draws (observations). If it is Vector or long[], then the number of draws is the number of elements of <code>nn</code>. This is consistent with the behavior of the underlying R function.</li>
+<li><code>m</code>: Number of white balls</li>
+<li><code>n</code>: Number of black balls</li>
+<li><code>k</code>: Number of balls that are drawn from the urn to generate each observation</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Hypergeometric.html">rhyper</a></p>
+<h2 id="rlnorm">rlnorm</h2>
+<p><code>Vector rlnorm(long n, double meanlog=0, double sdlog=1)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>meanlog</code>: Mean of the distribution on the logscale</li>
+<li><code>sdlog</code>: Standard deviation of the distribution on the logscale</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Lognormal.html">rlnorm</a></p>
+<h2 id="rmultinom">rmultinom</h2>
+<p><code>Matrix rmultinom(T)(long n, long size, T prob)</code></p>
+<ul>
+<li><code>n</code>: Number of random vectors to draw</li>
+<li><code>size</code>: Total number of elements drawn</li>
+<li><code>prob</code>: Vector of probabilities of each of the elements that are drawn. The number of elements in each of the <code>n</code> vectors is <code>size/prob.rows</code>. <code>prob</code> can be a Vector, or anything that converts to a Vector.</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Multinom.html">rmultinom</a></p>
+<h2 id="rnbinom">rnbinom</h2>
+<p><code>Vector rnbinom(long n, double size, double prob, double mu)</code><br />
+<code>Vector rnbinom(Vector n, double size, double prob, double mu)</code><br />
+<code>Vector rnbinom(T)(T[] n, double size, double prob, double mu)</code><br />
+<code>Vector rnbinom(long n, double size, double prob)</code><br />
+<code>Vector rnbinom(Vector n, double size, double prob)</code><br />
+<code>Vector rnbinom(T)(T[] n, double size, double prob)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>size</code>: Target for number of successful trials</li>
+<li><code>prob</code>: Probability of success in each trial</li>
+<li><code>mu</code>: Alternative to specifying prob</li>
+</ul>
+<p>If you want to specify <code>mu</code> rather than <code>prob</code>, set <code>prob</code> to double.nan. If <code>n</code> is a Vector or converts to a Vector, then the number of draws is <code>n.rows</code>.</p>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/NegBinomial.html">rnbinom</a></p>
+<h2 id="rpois">rpois</h2>
+<p><code>Vector rpois(double n, double lambda)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>lambda</code>: Mean</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Poisson.html">rpois</a></p>
+<h2 id="rt">rt</h2>
+<p><code>Vector rt(long n, double df, double ncp)</code><br />
+<code>Vector rt(long n, double df)</code><br />
+<code>Vector rt(Vector n, double df, double ncp)</code><br />
+<code>Vector rt(Vector n, double df)</code><br />
+<code>Vector rt(T)(T[] n, double df, double ncp)</code><br />
+<code>Vector rt(T)(T[] n, double df)</code></p>
+<ul>
+<li><code>n</code>: Number of draws. If <code>n</code> is a Vector or converts to a Vector, the number of draws is <code>n.rows</code>.</li>
+<li><code>df</code>: Degrees of freedom</li>
+<li><code>ncp</code>: Non-centrality parameter</li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/TDist.html">rt</a></p>
+<h2 id="rweibull">rweibull</h2>
+<p><code>Vector rweibull(long n, double shape, double scale=1.0)</code></p>
+<ul>
+<li><code>n</code>: Number of draws</li>
+<li><code>shape</code></li>
+<li><code>scale</code></li>
+</ul>
+<p>See also: <a href="https://web.mit.edu/r/current/lib/R/library/stats/html/Weibull.html">rweibull</a></p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

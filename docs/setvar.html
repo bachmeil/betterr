@@ -1,0 +1,28 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>setvar</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="passing-data-from-d-to-r">Passing data from D to R</h1>
+<p>In some cases, it is simplest to pass data from D to R in string format. For instance, this is about as efficient as you’ll get for setting a scalar integer inside R:</p>
+<pre><code>evalRQ(&quot;x &lt;- 3L&quot;);</code></pre>
+<p>The time it takes for R to evaluate that string is negligible. That wouldn’t work so well, however, if you have a 200x200 matrix. Suppose you allocate a Matrix <code>m</code> inside D that is the output of some linear algebra operations, and now that you’re done with efficiently carrying out those operations using an optimized BLAS, you want to create a variable named <code>mat</code> inside R so it can be used in a machine learning library.</p>
+<p>All you have to do is this:</p>
+<pre><code>toR(m.data.x, &quot;mat&quot;);</code></pre>
+<p><code>m.data</code> is where information about the data is stored inside a Matrix struct. <code>m.data.x</code> is the Robj that points to the data.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

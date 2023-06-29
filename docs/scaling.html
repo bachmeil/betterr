@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>scaling</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#scaling-to-zero">Scaling to zero</a></li>
+</ul>
+</div>
+<h1 id="scaling-to-zero">Scaling to zero</h1>
+<p>With a language like D, there’s a temptation to focus on performance. This is done by thinking about overhead and speed as one or more dimensions of the analysis goes to infinity:</p>
+<ul>
+<li>A very large number of observations</li>
+<li>A very large number of variables</li>
+<li>A very large number of models to fit</li>
+<li>A very large number of iterations</li>
+<li>A very large number of whatever</li>
+</ul>
+<p>That’s all well and good if it comes without a cost. In the real world, much of the data analysis that gets done <em>does not</em> involve very large values for any of those dimensions, and that’s why languages like R, Python, and SAS are so heavily used. What matters is convenience and functionality. The cost of focusing on performance is the loss of convenience and functionality.</p>
+<p>One goal of betterr is to make D convenient and functional for those situations where you have:</p>
+<ul>
+<li>A small number of observations</li>
+<li>A small number of variables</li>
+<li>A small number of models to fit</li>
+<li>A small number of iterations</li>
+<li>A small number of whatever</li>
+</ul>
+<p>D should be a perfectly viable solution any time you would reach for Python or R. I like writing programs in D because it’s a good language with static typing. I would use it even if performance was as good as Python. If you need performance, you can drop down to a lower level to handle the bottlenecks. For instance, if you want to do matrix algebra inside a loop, you can use <a href="https://github.com/bachmeil/dgretl">dgretl</a>.</p>
+<p>I view betterr as a library that scales to zero rather than infinity.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

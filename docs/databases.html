@@ -1,0 +1,30 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>databases</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="working-with-databases">Working with databases</h1>
+<p>One of the big advantages of working with R is the extensive database access. You have the usual relational databases (SQLite, Postgres, MariaDB, etc.), plus non-relational databases like Mongo, and other storage formats such as parquet. There are related projects such as DuckDB. This is a huge area with many options.</p>
+<p>Basically, there’s no reason to write any specific wrappers for these packages. Take the RSQLite package as an example. If you do this query from R</p>
+<pre><code>dbGetQuery(salesdb, &quot;select customer, sum(amount) 
+from sales group by customer order by sum(amount) desc&quot;)</code></pre>
+<p>the output is a data frame. You can do this from D:</p>
+<pre><code>auto df = DataFrame(`dbGetQuery(salesdb, &quot;select customer, sum(amount) 
+from sales group by customer order by sum(amount) desc&quot;)`);</code></pre>
+<p>and then you have the output you want as a data frame. It’s possible that this could be polished a bit with structs and methods, but it would be a thin wrapper over R code however you do it, and at least at this stage, it doesn’t meet the value/time threshold for me to work on it. The important thing is that you have access to all of the popular databases in D, with tested, reliable interfaces using the functionality already supplied by this library.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

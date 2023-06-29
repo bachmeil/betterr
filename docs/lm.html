@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>lm</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#lm">lm</a>
+<ul>
+<li><a href="#struct-lmfit">struct LMFit</a></li>
+<li><a href="#estimation">Estimation</a></li>
+<li><a href="#struct-lmconfig">struct LMConfig</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="lm">lm</h1>
+<p>Functionality for basic OLS regression. More will be added.</p>
+<h2 id="struct-lmfit">struct LMFit</h2>
+<p>Holds the output of a regression.</p>
+<ul>
+<li><code>Vector beta()</code>: Vector of coefficients</li>
+<li><code>List coefficients()</code>: Coefficients plus standard errors and other information, as provided by <code>summary</code></li>
+<li><code>Vector residuals()</code></li>
+<li><code>Vector fittedValues()</code></li>
+<li><code>int dfResidual()</code></li>
+<li><code>List model()</code></li>
+<li><code>double sigma()</code></li>
+<li><code>double rsq()</code></li>
+<li><code>double adjrsq()</code></li>
+<li><code>double fstat()</code><br />
+</li>
+<li><code>List unscaledCov()</code></li>
+<li><code>void print(string msg="")</code>: Print the output provided by <code>lm</code> (not <code>summary</code>), with an optional message</li>
+<li><code>double pred(double x)</code>: Makes a prediction with new data <code>x</code>, assuming this is a simple linear regression (one regressor)</li>
+<li><code>double pred(Vector x)</code>: Makes a prediction with new data <code>x</code>, for any number of regressors. Automatically handles the intercept, so you should not include a 1 or any other number in <code>x</code> to account for the intercept.</li>
+</ul>
+<h2 id="estimation">Estimation</h2>
+<ul>
+<li><code>LMFit lm(T1, T2)(T1 y, T2 x)</code></li>
+<li><code>LMFit lm(T1, T2)(T1 y, T2 x, LMConfig conf)</code></li>
+<li><code>LMFit lm(DataFrame df, LMConfig conf)</code></li>
+</ul>
+<h2 id="struct-lmconfig">struct LMConfig</h2>
+<p>Configuration for a regression.</p>
+<ul>
+<li><code>string lhs</code></li>
+<li><code>string[] rhs</code></li>
+<li><code>bool intercept = true</code></li>
+<li><code>Subset subset</code></li>
+</ul>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

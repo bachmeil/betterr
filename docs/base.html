@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>base</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#source-code-and-examples">Source Code and Examples</a></li>
+<li><a href="#functions">Functions</a></li>
+<li><a href="#fast-fundamental-operations">Fast Fundamental Operations</a></li>
+</ul>
+</div>
+<h1 id="overview">Overview</h1>
+<p>Usage:</p>
+<pre><code>import betterr.baser;</code></pre>
+<p>This module exposes some base R functionality to D.</p>
+<h1 id="source-code-and-examples">Source Code and Examples</h1>
+<ul>
+<li><a href="https://github.com/bachmeil/betterr/blob/main/baser.d">Source Code</a></li>
+<li><a href="https://github.com/bachmeil/betterr/blob/main/testing/testbase.d">Examples</a></li>
+</ul>
+<h1 id="functions">Functions</h1>
+<p>These functions take a single argument, and function similar to the underlying R functions. Links are to the R documentation, which provides everything you need to know. Where it applies, you can call the functions with D scalars or arrays.</p>
+<ul>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/MathFun.html">abs</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/MathFun.html">sqrt</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Round.html">ceiling</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Round.html">floor</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Round.html">trunc</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Hyperbolic.html">cosh</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Hyperbolic.html">sinh</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Hyperbolic.html">tanh</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Hyperbolic.html">acosh</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Hyperbolic.html">asinh</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Hyperbolic.html">atanh</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Log.html">log10</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Log.html">log2</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Log.html">log1p</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Log.html">exp</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Log.html">expm1</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/cumsum.html">cumsum</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/cumsum.html">cumprod</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/cumsum.html">cummax</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/cumsum.html">cummin</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/rev.html">rev</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/summary.html">summary</a></li>
+</ul>
+<p>These functions are the same as those above, but take an optional second argument. If set to true, NA values are removed before the calculation is done.</p>
+<ul>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Extremes.html">max</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Extremes.html">min</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Extremes.html">sum</a></li>
+</ul>
+<p>These functions take optional arguments. At this time, the optional arguments are a string (with comma separating arguments) that is passed directly to R. See the R documentation for the available optional arguments.</p>
+<ul>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Round.html">round</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Round.html">signif</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Log.html">log</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/Log.html">logb</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/prod.html">prod</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/range.html">range</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/rank.html">rank</a></li>
+<li><a href="https://web.mit.edu/r/current/lib/R/library/base/html/sort.html">sort</a></li>
+</ul>
+<p>Finally, we have</p>
+<p><code>seq(double from, double including, double by)</code></p>
+<ul>
+<li><code>from</code>: Starting value of the sequence</li>
+<li><code>including</code>: Ending value of the sequence - following R, included in the sequence</li>
+<li><code>by</code>: Increment</li>
+</ul>
+<p>Note that these do not need to be integers, so this function is different from R’s <code>:</code> operator.</p>
+<p><a href="https://web.mit.edu/r/current/lib/R/library/base/html/seq.html">R documentation</a></p>
+<h1 id="fast-fundamental-operations">Fast Fundamental Operations</h1>
+<p>Although the primary goal of this project is to provide all of R’s functionality to D programs, relying on R for fundamental building blocks such as summation or calculating the mean will lead to a serious performance hit. As an example, look at what happens if we use the R interpreter to calculate the mean of a <code>double[]</code>:</p>
+<ul>
+<li>Allocate a new Vector.</li>
+<li>Copy the elements into the Vector.</li>
+<li>Tell R to calculate the mean of the Vector.</li>
+<li>Get a pointer to the solution.</li>
+<li>Convert the value at the pointer to a double.</li>
+</ul>
+<p>That’s not a problem if you’re going to calculate the mean of a <code>double[100]</code> one time. If you’re going to calculate the mean of a <code>double[]</code> holding tens of thousands of elements on the inside of a loop that’s executed a billion times, the above is ridiculously inefficient. To the extent possible, we want to make sure this type of operation is performant, so what actually happens under the hood is that the mean is calculated by Mir. The following operations currently have efficient implementations using Mir or Phobos:</p>
+<ul>
+<li><code>double mean(double[] x)</code></li>
+<li><code>double mean(T)(T v)</code> for T a Vector or Matrix</li>
+<li><code>double mean(double[] x, bool narm=false)</code></li>
+<li><code>double mean(T)(T x, bool narm=false)</code> for T a Vector or Matrix</li>
+<li><code>double median(double[] x)</code></li>
+<li><code>double median(T)(T v)</code></li>
+<li><code>double median(string filtered, T)(T v)</code> for T a Vector or Matrix</li>
+<li><code>double median(double[] x, bool narm=false)</code></li>
+<li><code>double median(T)(T x, bool narm=false)</code> for T a Vector or Matrix</li>
+<li><code>double sum(double[] x)</code></li>
+<li><code>double sum(T)(T v)</code> for T a Vector or Matrix</li>
+<li><code>double sum(double[] x, bool narm=false)</code></li>
+<li><code>double sum(T)(T x, bool narm=false)</code> for T a Vector or Matrix</li>
+<li><code>double max(double[] x)</code></li>
+<li><code>double max(T)(T x)</code> for T a Vector or Matrix</li>
+<li><code>double max(double[] x, bool narm=false)</code></li>
+<li><code>double max(T)(T x, bool narm=false)</code> for T a Vector or Matrix</li>
+<li><code>double min(double[] x)</code></li>
+<li><code>double min(T)(T x)</code> for T a Vector or Matrix</li>
+<li><code>double min(double[] x, bool narm=false)</code></li>
+<li><code>double min(T)(T x, bool narm=false)</code> for T a Vector or Matrix</li>
+<li><code>double sd(double[] x)</code></li>
+<li><code>double sd(T)(T x)</code> for T a Vector or Matrix</li>
+<li><code>double sd(double[] x, bool narm=false)</code></li>
+<li><code>double sd(T)(T x, bool narm=false)</code> for T a Vector or Matrix</li>
+<li><code>double var(double[] x)</code></li>
+<li><code>double var(T)(T x)</code> for T a Vector or Matrix</li>
+<li><code>double var(double[] x, bool narm=false)</code></li>
+<li><code>double var(T)(T x, bool narm=false)</code> for T a Vector or Matrix</li>
+<li><code>double quantile(double[] x, double p)</code></li>
+<li><code>double quantile(double[] x, double p, bool narm)</code></li>
+<li><code>double quantile(T)(T x, double p)</code> for T a Vector or Matrix</li>
+<li><code>double quantile(T)(T x, double p, bool narm)</code> for T a Vector or Matrix</li>
+<li><code>double[] quantile(double[] x, double[] p)</code></li>
+<li><code>double[] quantile(T)(T x, double[] p)</code> for T a Vector or Matrix</li>
+<li><code>double[] quantile(double[] x, double[] p, bool narm)</code></li>
+<li><code>double[] quantile(T)(T x, double[] p, bool narm)</code> for T a Vector or Matrix</li>
+</ul>
+<p>The following make use of R due to lack of an alternative implementation:</p>
+<ul>
+<li><code>double mean(double[] x, double trim=0, bool narm=false)</code></li>
+<li><code>double mean(T)(T v, double trim=0, bool narm=false)</code> for T a Vector or Matrix</li>
+</ul>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

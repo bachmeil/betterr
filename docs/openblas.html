@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>openblas</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<h1 id="working-with-openblas">Working With OpenBLAS</h1>
+<p>You can check out the example file titled testblas.d to see how you can use OpenBLAS for low-level matrix computations. Note a couple of things, however.</p>
+<p><strong>It’s probably not going to speed things up in most cases.</strong> It seems natural to think that using OpenBLAS will lead to better performance for matrix multiplication and other such operations. It will <em>if you’re reusing a matrix/vector</em>. If you already have all vectors and matrices allocated, these functions will be much faster. If you need to allocate a new matrix/vector to hold the result, there’s nothing to gain, since the matrix operations already call into BLAS to do the calculations. The R functions will, in most cases, allocate a new matrix/vector to hold the results. You can avoid that by using BLAS.</p>
+<p><strong>Not everything has been demonstrated in that file.</strong> I just showed how to use OpenBLAS. I generally don’t have a need to go this low-level, so I have not created a full library.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

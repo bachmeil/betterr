@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>ts</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#ts">TS</a></li>
+<li><a href="#construction">Construction</a>
+<ul>
+<li><a href="#thisstring-code">this(string code)</a></li>
+<li><a href="#thisstring-code-long-_start">this(string code, long _start)</a></li>
+<li><a href="#thisstring-code-long2-_start-int-_frequency">this(string code, long[2] _start, int _frequency)</a></li>
+<li><a href="#thistt-obj-long-_start">this(T)(T obj, long _start)</a></li>
+<li><a href="#thistt-obj-long2-_start-int-_frequency">this(T)(T obj, long[2] _start, int _frequency)</a></li>
+</ul></li>
+<li><a href="#indexing">Indexing</a>
+<ul>
+<li><a href="#one-element-of-an-annual-series">One element of an annual series</a></li>
+<li><a href="#one-element-of-a-monthly-or-quarterly-series">One element of a monthly or quarterly series</a></li>
+<li><a href="#slicing-an-annual-series">Slicing an annual series</a></li>
+<li><a href="#slicing-a-monthly-or-quarterly-series">Slicing a monthly or quarterly series</a></li>
+<li><a href="#untillong-e">until(long e)</a></li>
+<li><a href="#ts-untillong2-e">TS until(long[2] e)</a></li>
+<li><a href="#ts-startinglong-s">TS starting(long s)</a></li>
+<li><a href="#ts-startinglong2-s">TS starting(long[2] s)</a></li>
+<li><a href="#ts-laglong-k">TS lag(long k)</a></li>
+<li><a href="#ts-leadlong-k">TS lead(long k)</a></li>
+<li><a href="#ts-difflong-k">TS diff(long k)</a></li>
+<li><a href="#ts-pctlong-k">TS pct(long k)</a></li>
+<li><a href="#void-printstring-msg">void print(string msg="")</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="ts">TS</h1>
+<p>This struct is for holding a single time series. It’s a vector, but it also stores metadata on the frequency and the dates covered.</p>
+<h1 id="construction">Construction</h1>
+<h2 id="thisstring-code">this(string code)</h2>
+<p>This is primarily used internally. <code>code</code> is passed to R and the output is captured. It is assumed that the code run inside R produces a ts object. For instance, if you had a vector x inside R and you wanted to convert it to a TS struct accessible from D, you could do something like this:</p>
+<pre><code>auto xx = TS(&quot;ts(x)&quot;);</code></pre>
+<h2 id="thisstring-code-long-_start">this(string code, long _start)</h2>
+<p>Converts <code>code</code> to an annual ts object, with the first observation being <code>_start</code>. If you have vector x inside R and want to convert it to a TS struct starting in 1959:</p>
+<pre><code>auto xx = TS(&quot;x&quot;, 1959);</code></pre>
+<h2 id="thisstring-code-long2-_start-int-_frequency">this(string code, long[2] _start, int _frequency)</h2>
+<p>If you have vector x inside R and want to convert it to a monthly TS struct starting in January 1959:</p>
+<pre><code>auto xx = TS(&quot;x&quot;, [1959, 1], 12);</code></pre>
+<h2 id="thistt-obj-long-_start">this(T)(T obj, long _start)</h2>
+<p>Convert the D struct obj into an annual time series starting in <code>_start</code>.</p>
+<pre><code>auto v = rnorm(20);
+auto x = TS(v, 2003);</code></pre>
+<h2 id="thistt-obj-long2-_start-int-_frequency">this(T)(T obj, long[2] _start, int _frequency)</h2>
+<p>Convert the D struct obj into a monthly or quarterly time series starting in <code>_start</code>.</p>
+<pre><code>auto v = rnorm(120);
+auto x = TS(v, [2013, 1]);</code></pre>
+<h1 id="indexing">Indexing</h1>
+<p>Indexing of TS elements is done by date rather than element number. The underlying data array changes routinely for TS structs, as you take lags, differences, percentage changes, etc., so you want to use dates instead. (If you really want to work with the underlying data array, you can do that as ptr[ii], since ptr is a pointer to the data array.)</p>
+<h2 id="one-element-of-an-annual-series">One element of an annual series</h2>
+<pre><code>double v = x[1987];</code></pre>
+<h2 id="one-element-of-a-monthly-or-quarterly-series">One element of a monthly or quarterly series</h2>
+<pre><code>double v = x[2017, 4];</code></pre>
+<h2 id="slicing-an-annual-series">Slicing an annual series</h2>
+<p>Note: The last date is included.</p>
+<pre><code>TS y = x[1980..2022];</code></pre>
+<h2 id="slicing-a-monthly-or-quarterly-series">Slicing a monthly or quarterly series</h2>
+<p>Note: The last date is included.</p>
+<pre><code>TS y = x[ [1980,1]..[2022,6] ];</code></pre>
+<h2 id="untillong-e">until(long e)</h2>
+<p>Returns all observations of an annual series through year e.</p>
+<pre><code>TS y = x.until(2008);</code></pre>
+<h2 id="ts-untillong2-e">TS until(long[2] e)</h2>
+<p>Returns all observations of a quarterly or monthly series through e.</p>
+<pre><code>TS y = x.until(2008, 8);</code></pre>
+<h2 id="ts-startinglong-s">TS starting(long s)</h2>
+<p>Returns all observations of an annual series from year s to the end.</p>
+<pre><code>TS y = x.starting(2008);</code></pre>
+<h2 id="ts-startinglong2-s">TS starting(long[2] s)</h2>
+<p>Returns all observations of a quarterly or monthly series from year s to the end.</p>
+<pre><code>TS y = x.starting(2008, 8);</code></pre>
+<h2 id="ts-laglong-k">TS lag(long k)</h2>
+<p>Returns the TS created by taking the kth lag. Creates a new TS struct without mutating this.</p>
+<p>Note that unlike R, this uses the standard definition of a lag, such that lag 1 is the previous observation.</p>
+<pre><code>TS y = x.lag(4); // Year earlier observations of a quarterly series</code></pre>
+<h2 id="ts-leadlong-k">TS lead(long k)</h2>
+<p>Returns the series from k time periods in the future. This matches R’s non-standard definition of a lag, so that <code>x.lead(2)</code> is the equivalent of <code>lag(x, 2)</code> in R.</p>
+<pre><code>TS y = x.lead(4); // Year in the future observations of a quarterly series</code></pre>
+<h2 id="ts-difflong-k">TS diff(long k)</h2>
+<p>Difference between the values of x at time t and t-k. Equivalent to R’s diff function.</p>
+<pre><code>TS dx = x.diff(1);</code></pre>
+<h2 id="ts-pctlong-k">TS pct(long k)</h2>
+<p>Calculates the percentage change from time t-k to time t.</p>
+<h2 id="void-printstring-msg">void print(string msg="")</h2>
+<p>Prints the series and metadata to the screen, optionally preceded by the message msg.</p>
+<pre><code>x.print(&quot;Monthly copper prices from January 1990 to March 2023&quot;);</code></pre>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

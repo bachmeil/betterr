@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>optim</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#optimization">Optimization</a>
+<ul>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#objective-function-and-gradient">Objective Function and Gradient</a></li>
+<li><a href="#result">Result</a></li>
+<li><a href="#nelder-mead">Nelder-Mead</a></li>
+<li><a href="#bfgs">BFGS</a></li>
+<li><a href="#conjugate-gradient">Conjugate Gradient</a></li>
+<li><a href="#l-bfgs-bounds-constraints">L-BFGS (Bounds constraints)</a></li>
+<li><a href="#simulated-annealing">Simulated Annealing</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="optimization">Optimization</h1>
+<p>The optimization routines used by <a href="https://web.mit.edu/~r/current/lib/R/library/stats/html/optim.html">optim</a> are <a href="https://rstudio.github.io/r-manuals/r-exts/The-R-API.html#optimization">exposed as part of the R API</a>. This module provides a convenient interface for D programs needing to solve numerical optimization problems.</p>
+<h2 id="examples">Examples</h2>
+<p>It’s probably easiest in most cases to get started with this module by <a href="https://github.com/bachmeil/betterr/blob/main/testing/testoptim.d">studying the examples</a>.</p>
+<h2 id="objective-function-and-gradient">Objective Function and Gradient</h2>
+<p>Regardless of the algorithm, you always need to define the objective function. These routines do minimization, so if you are maximizing a function, with the most common case being maximum likelihood estimation, you need the negative of the objective function. You may also need the gradient function depending on the algorithm.</p>
+<p>Both functions need to be marked <code>extern(C)</code> because the underlying libraries are written in C. We will minimize the function <code>x^2 + y^2</code>. The solution is easily seen to be at <code>x=0, y=0</code>. Aliases for them are defined as</p>
+<pre><code>alias optimfn = double function(int, double*, void*);
+alias optimgr = void function(int, double*, double*, void*);</code></pre>
+<p>For the objective function in this example, we have</p>
+<pre><code>extern(C) {
+  double f(int n, double * par, void * ex) {
+    return par[0]*par[0] + par[1]*par[1];
+  }
+
+  void g(int n, double * par, double * gr, void * ex) {
+    gr[0] = 2*par[0];
+    gr[1] = 2*par[1];
+  }
+}</code></pre>
+<h2 id="result">Result</h2>
+<p>All optimization algorithms return a struct <code>OptimSolution</code> with the following data:</p>
+<ul>
+<li>double[] sol: The solution vector</li>
+<li>double[] init: The starting values</li>
+<li>bool fail: Takes the value true if the optimization failed</li>
+<li>int fncount: Number of function evaluations</li>
+<li>double objFunction: The value of the objective function at sol</li>
+<li>string algorithm: The algorithm used</li>
+</ul>
+<h2 id="nelder-mead">Nelder-Mead</h2>
+<p>This is the default algorithm used by optim. It doesn’t require derivatives, and it’s robust, with the main downside being that it’s slow relative to the other algorithms.</p>
+<p>You call the constructor with the objective function:</p>
+<pre><code>auto nm = NelderMead(&amp;f);</code></pre>
+<p>To do the optimization, you call the <code>solve</code> method with a vector of starting values:</p>
+<pre><code>OptimSolution sol = nm.solve([3.5, -5.5]);</code></pre>
+<p>Alternatively, you can use the lower-level interface that is available for the rare case where you need more flexibility. The first argument is a <code>double *</code> to an array holding the solution, the second is a <code>double *</code> to an array holding the starting values, the third is an <code>int</code> holding the number of parameters, and the fourth (optional) is a <code>void *</code> that points to data used to evaluate the objective function and/or the gradient function.</p>
+<pre><code>double[] starting = [3.5, -5.5];
+double[] solution = [0.0, 0.0];
+sol = nm.solve(solution.ptr, starting.ptr, 2);</code></pre>
+<p>Finally, you could call the function <code>nmmin</code> directly, but since that’s less convenient, more error-prone, and provides no additional functionality beyond the low-level <code>solve</code> function, I will not write about it further. You can read the betterr.optim source file and the R API documentation if you really want those details.</p>
+<p>The NelderMead struct contains numerous parameters you can adjust, similar to the options you set when calling <code>optim</code> in R.</p>
+<ul>
+<li>double abstol = -double.infinity;</li>
+<li>double intol = 0.00000001;</li>
+<li>double alpha = 1.0;</li>
+<li>double beta = 0.5;</li>
+<li>double gamma = 2.0;</li>
+<li>bool trace = false;</li>
+<li>int maxit = 500;</li>
+</ul>
+<p>See <a href="https://web.mit.edu/~r/current/lib/R/library/stats/html/optim.html">the help file for optim</a> if you want more information about those parameters. <code>intol</code> is used to calculate the convergence tolerance. In <a href="https://github.com/wch/r-source/blob/8d985707638d3e1b20df24fe48c7e47347656f8f/src/appl/optim.c#L302">the source code</a>, the convergence tolerance is defined as <code>convtol = intol * (fabs(f) + intol)</code>, where <code>f</code> is the value of the objective function evaluated at the current parameter vector. I believe that what is called <code>intol</code> in the C source is the same as <code>reltol</code> in the control argument to <code>optim</code>, because the help says “Relative convergence tolerance. The algorithm stops if it is unable to reduce the value by a factor of reltol * (abs(val) + reltol) at a step. Defaults to sqrt(.Machine$double.eps), typically about 1e-8.” That is why I have set the default value for <code>intol</code> to 0.00000001.</p>
+<h2 id="bfgs">BFGS</h2>
+<p>For BFGS, you use a <code>BFGS</code> struct. The options you can set are</p>
+<pre><code>optimfn fn;
+optimgr gr;
+double abstol = -double.infinity;
+double reltol = 0.00000001;
+bool trace = false;
+int maxit = 100;
+int report = 10;</code></pre>
+<p><code>fn</code> is the function evaluating the objective function. <code>gr</code> is the function evaluating the gradient. The other options are similar to <a href="https://web.mit.edu/~r/current/lib/R/library/stats/html/optim.html">those of optim</a>. Note that the gradient function is required.</p>
+<h2 id="conjugate-gradient">Conjugate Gradient</h2>
+<p>For conjugate gradient, you use a <code>ConjugateGradient</code> struct. The available options are</p>
+<pre><code>optimfn fn;
+optimgr gr;
+double abstol = -double.infinity;
+double reltol = 0.00000001;
+bool trace = false;
+int maxit = 100;
+int type = 1; // 1 is Fletcher-Reeves, 2 is Polak-Ribiere, 3 is Beale-Sorenson</code></pre>
+<p>The gradient function is required.</p>
+<h2 id="l-bfgs-bounds-constraints">L-BFGS (Bounds constraints)</h2>
+<p>This algorithm allows you to impose bounds constraints, such that there are upper and/or lower limits on individual parameters. For this algorithm, you use the <code>Bounded</code> struct. The available options are</p>
+<pre><code>optimfn fn;
+optimgr gr;
+int lmm = 5; // Maximum number of variable metric corrections
+double factr = 0.0000001;
+double pgtol = 0.0;
+bool trace = false;
+int maxit = 100;
+int type = 1; // 1 is Fletcher-Reeves, 2 is Polak-Ribiere, 3 is Beale-Sorenson
+int report = 10;</code></pre>
+<p>The gradient function is required.</p>
+<h2 id="simulated-annealing">Simulated Annealing</h2>
+<p>This algorithm is not documented in a way that allows you to use it. After a debugging session inside the R source code, I found out what was going on, but the end user of this library does not need to worry about it. You use simulated annealing through the <code>SA</code> struct. The available options are</p>
+<pre><code>optimfn fn;
+int trace = 100; // Apparently, this function treats trace like the others treat report
+int maxit = 10000;
+int tmax = 10;
+double temp = 10.0;</code></pre>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

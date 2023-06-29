@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>plot</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#plotting">Plotting</a>
+<ul>
+<li><a href="#functionality">Functionality</a></li>
+<li><a href="#example">Example</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="plotting">Plotting</h1>
+<p>Minimal plotting capabilities have been added to this point. The reason is that there is little motivation to do so. If you want to make a plot in R, you can do something like this:</p>
+<pre><code>evalRQ(`pdf(&quot;myplot.pdf&quot;)`);
+evalRQ(`plot(` ~ x.name ~ `, main=&quot;A Plot of My Data&quot;)`);
+evalRQ(`dev.off()`);</code></pre>
+<p>D doesn’t bring a lot to the table when making R plots like this. Perhaps in the future I will decide that’s not true, but for now I don’t have too much motivation to add wrappers to existing R plotting functions.</p>
+<h2 id="functionality">Functionality</h2>
+<p>The betterr.plot module provides a struct for simple plots. It holds the following data, all of which are optional, other than <code>name</code>:</p>
+<ul>
+<li>string name: The R name of the variable to be plotted.</li>
+<li>string type: Plot type, for instance, <code>l</code> produces a line plot.</li>
+<li>string main: The main title</li>
+<li>string sub: Subtitle</li>
+<li>string xlab: Label on the x-axis</li>
+<li>string ylab: Label on the y-axis</li>
+</ul>
+<h2 id="example">Example</h2>
+<p>This creates a file called myplot.pdf holding a plot of the data in x.</p>
+<pre><code>Vector x = [1.7, -0.2, 3.4, -0.2, 6.8, 1.2];
+auto p = Plot(x.name);
+p.main = &quot;Plot of random points&quot;;
+p.sub = &quot;Just some test data, actually&quot;;
+p.type = &quot;b&quot;;
+p.xlab = &quot;x values&quot;;
+p.ylab = &quot;y values&quot;;
+p.create(&quot;myplot&quot;);</code></pre>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

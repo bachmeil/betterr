@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>matrix</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#matrix">Matrix</a></li>
+<li><a href="#functionality">Functionality</a>
+<ul>
+<li><a href="#construction">Construction</a>
+<ul>
+<li><a href="#thislong-r-long-c">this(long r, long c)</a></li>
+<li><a href="#thismatrix-m">this(Matrix m)</a></li>
+<li><a href="#thissubmatrix-sm">this(Submatrix sm)</a></li>
+<li><a href="#thisvector-v">this(Vector v)</a></li>
+<li><a href="#thisvector-v-long-r-long-c">this(Vector v, long r, long c)</a></li>
+<li><a href="#dup">dup</a></li>
+<li><a href="#thisrdata-rd">this(RData rd)</a></li>
+<li><a href="#thisstring-code">this(string code)</a></li>
+<li><a href="#examples">Examples</a></li>
+</ul></li>
+<li><a href="#indexing">Indexing</a>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#operations-that-avoid-allocating-a-new-matrix">Operations that avoid allocating a new Matrix</a></li>
+<li><a href="#operations-that-allocate-a-new-matrix">Operations that allocate a new matrix</a></li>
+</ul></li>
+<li><a href="#other-functions">Other Functions</a>
+<ul>
+<li><a href="#vector-rowsums">Vector rowSums()</a></li>
+<li><a href="#vector-colsums">Vector colSums()</a></li>
+<li><a href="#vector-rowmeans">Vector rowMeans()</a></li>
+<li><a href="#vector-colmeans">Vector colMeans()</a></li>
+<li><a href="#vector-rowlong-ii">Vector row(long ii)</a></li>
+<li><a href="#vector-columnlong-ii">Vector column(long ii)</a></li>
+<li><a href="#vector-lastrow">Vector lastrow()</a></li>
+<li><a href="#vector-lastcolumn">Vector lastcolumn()</a></li>
+<li><a href="#matrix-matmulmatrix-x-matrix-y">Matrix matmul(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-matmulvector-v-matrix-y">Matrix matmul(Vector v, Matrix y)</a></li>
+<li><a href="#matrix-matmulmatrix-x-vector-v">Matrix matmul(Matrix x, Vector v)</a></li>
+<li><a href="#matrix-elmulmatrix-x-matrix-y">Matrix elmul(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-plusmatrix-x-matrix-y">Matrix plus(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-minusmatrix-x-matrix-y">Matrix minus(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-divmatrix-x-matrix-y">Matrix div(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-mulmatrix-x-double-y">Matrix mul(Matrix x, double y)</a></li>
+<li><a href="#matrix-plusmatrix-x-double-y">Matrix plus(Matrix x, double y)</a></li>
+<li><a href="#matrix-minusmatrix-x-double-y">Matrix minus(Matrix x, double y)</a></li>
+<li><a href="#matrix-divmatrix-x-double-y">Matrix div(Matrix x, double y)</a></li>
+<li><a href="#matrix-muldouble-y-matrix-x">Matrix mul(double y, Matrix x)</a></li>
+<li><a href="#matrix-plusdouble-y-matrix-x">Matrix plus(double y, Matrix x)</a></li>
+<li><a href="#matrix-minusdouble-y-matrix-x">Matrix minus(double y, Matrix x)</a></li>
+<li><a href="#matrix-divdouble-y-matrix-x">Matrix div(double y, Matrix x)</a></li>
+<li><a href="#matrix-tmatrix-x">Matrix t(Matrix x)</a></li>
+<li><a href="#matrix-solvematrix-x">Matrix solve(Matrix x)</a></li>
+<li><a href="#matrix-solvematrix-x-matrix-y">Matrix solve(Matrix x, Matrix y)</a></li>
+<li><a href="#vector-solvematrix-x-vector-y">Vector solve(Matrix x, Vector y)</a></li>
+<li><a href="#matrix-invmatrix-x">Matrix inv(Matrix x)</a></li>
+<li><a href="#vector-diagmatrix-x">Vector diag(Matrix x)</a></li>
+<li><a href="#matrix-kroneckermatrix-x-matrix-y">Matrix kronecker(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-crossprodmatrix-x-matrix-y">Matrix crossprod(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-tcrossprodmatrix-x-matrix-y">Matrix tcrossprod(Matrix x, Matrix y)</a></li>
+<li><a href="#matrix-crossprodmatrix-x">Matrix crossprod(Matrix x)</a></li>
+<li><a href="#matrix-tcrossprodmatrix-x">Matrix tcrossprod(Matrix x)</a></li>
+<li><a href="#double-detmatrix-x">double det(Matrix x)</a></li>
+<li><a href="#matrix-diaglong-ii">Matrix diag(long ii)</a></li>
+<li><a href="#matrix-eyelong-ii">Matrix eye(long ii)</a></li>
+<li><a href="#matrix-cbindmatrix-m-vector-v">Matrix cbind(Matrix m, Vector v)</a></li>
+<li><a href="#matrix-rbindmatrix-m-vector-v">Matrix rbind(Matrix m, Vector v)</a></li>
+<li><a href="#matrix-cbindmatrix-m-double-arr">Matrix cbind(Matrix m, double[] arr)</a></li>
+<li><a href="#matrix-rbindmatrix-m-double-arr">Matrix rbind(Matrix m, double[] arr)</a></li>
+</ul></li>
+<li><a href="#other-structs">Other structs</a>
+<ul>
+<li><a href="#struct-svd">struct SVD</a></li>
+<li><a href="#struct-eigen">struct Eigen</a></li>
+<li><a href="#column">Column</a></li>
+<li><a href="#row">Row</a></li>
+<li><a href="#columnfill">ColumnFill</a></li>
+<li><a href="#rowfill">RowFill</a></li>
+<li><a href="#diagonalfill">DiagonalFill</a></li>
+<li><a href="#abovediagonalfill">AboveDiagonalFill</a></li>
+<li><a href="#belowdiagonalfill">BelowDiagonalFill</a></li>
+<li><a href="#matrixfill">MatrixFill</a></li>
+<li><a href="#blockfill">BlockFill</a></li>
+</ul></li>
+<li><a href="#intmatrix">IntMatrix</a></li>
+<li><a href="#boolmatrix">BoolMatrix</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="matrix">Matrix</h1>
+<p>A <code>Matrix</code> is a struct that holds information about a matrix that has been allocated inside R. The data is:</p>
+<pre><code>long rows;
+long cols;
+RData data;
+double * ptr;</code></pre>
+<p>where <code>rows</code> and <code>cols</code> are what you’d expect, <code>data</code> is the reference to the data allocated by R, and <code>ptr</code> is a pointer to the underlying data array. Allocation of a new matrix is done by R. <code>ptr</code> allows access and setting of elements to be done without involving R, which in many cases is the bottleneck when using R for simulations or other situations that require working with individual elements. It also allows speed gains for reasons that may be surprising. Consider this code in R:</p>
+<pre><code>m[1:3, 2:4] &lt;- m2</code></pre>
+<p>The underlying data structure might change when you assign to a <code>Matrix</code>, due to R’s delayed copying. Imagine doing that in the middle of a loop that is executed millions of times. The equivalent code in D looks like this:</p>
+<pre><code>m[1..3, 2..4] = m2;</code></pre>
+<p>The dimensions of <code>m2</code> can be confirmed to match <code>m[1..3, 2..4]</code> and the corresponding elements of <code>m2</code> can be copied into the right place in <code>m</code> directly by using <code>ptr</code>. There is never a need to reallocate <code>m</code> and copy its elements for this operation.</p>
+<h1 id="functionality">Functionality</h1>
+<h2 id="construction">Construction</h2>
+<h3 id="thislong-r-long-c">this(long r, long c)</h3>
+<h3 id="thismatrix-m">this(Matrix m)</h3>
+<h3 id="thissubmatrix-sm">this(Submatrix sm)</h3>
+<h3 id="thisvector-v">this(Vector v)</h3>
+<p>Copies the elements of <code>v</code> into a newly allocated matrix with dimensions (v.length x 1).</p>
+<h3 id="thisvector-v-long-r-long-c">this(Vector v, long r, long c)</h3>
+<p>Copies the elements of <code>v</code> into a newly allocated matrix with dimensions (r x c). Fills by column rather than row.</p>
+<h3 id="dup">dup</h3>
+<p>Allocates a new matrix and copies the elements into it.</p>
+<h3 id="thisrdata-rd">this(RData rd)</h3>
+<p>Should rarely be used in user code</p>
+<h3 id="thisstring-code">this(string code)</h3>
+<p>Should rarely be used in user code</p>
+<h3 id="examples">Examples</h3>
+<pre><code>auto m1 = Matrix(10, 25);
+auto m2 = Matrix(m1); // R creates a copy of m1
+auto m1ref = m1.reference(); // Creates a reference to avoid copying
+auto m3 = m1ref[0..2, 0..2]; // The right side does not create a new matrix
+auto v = Vector([1.1, 2.2, 3.3, 4.4]); // Use assignment to avoid the creation of a vector
+auto m4 = Matrix(v); // Matrix with one column and four rows
+auto m5 = Matrix(v, 2, 2); // Matrix with two columns and two rows
+auto m6 = m5.dup;</code></pre>
+<h2 id="indexing">Indexing</h2>
+<h3 id="overview">Overview</h3>
+<p>Multidimensional slicing allows the use of standard matrix notation.</p>
+<pre><code>m[1,4]
+m[1..3, 4]
+m[1..3, 4..8]
+m[3, 0..$] // $ has the usual meaning; takes all elements of row 3</code></pre>
+<p>There is also a special struct type used to take all elements of a row or column:</p>
+<pre><code>m[3, _all] // All elements of the third row
+m[_all, 3] // All elements of the third column
+m[_all, _all] // The entire matrix</code></pre>
+<p>Finally, you might want to pull out a block with non-consecutive rows or columns. It is the same as R:</p>
+<pre><code>m[3, [1, 4, 9]] // Column 1, 4, and 9 of row 3</code></pre>
+<p>The above has the R equivalent <code>m[4, c(2, 5, 10)]</code>.</p>
+<h3 id="operations-that-avoid-allocating-a-new-matrix">Operations that avoid allocating a new Matrix</h3>
+<p>Accessing a single element returns a double:</p>
+<pre><code>double x = m[4,7];</code></pre>
+<p>Note that R is not involved in this operation. The above is equivalent to something like this:</p>
+<pre><code>double x = m.ptr[39];</code></pre>
+<p>Any operations on a Submatrix avoid allocating a new matrix (see the next section for details). That is done by calling <code>reference</code>:</p>
+<pre><code>Submatrix sm = m.reference();</code></pre>
+<h3 id="operations-that-allocate-a-new-matrix">Operations that allocate a new matrix</h3>
+<p>Anything that returns more than a single element will allocate a new Matrix. In other words, this returns a new (2 x 2) matrix:</p>
+<pre><code>m[0..2, 0..2];</code></pre>
+<p>Suppose you’re doing this operation:</p>
+<pre><code>m1 = m[0..2, 0..2];</code></pre>
+<p>The right side will allocate a new Matrix, the elements of that block of <code>m</code> will be copied into the new matrix, and then those elements will be copied into <code>m1</code>. Since the right side will never be used again, the new matrix will be destroyed. There is no easy solution to this. In this example</p>
+<pre><code>auto m2 = m[0..2, 0..2];</code></pre>
+<p>you want the right side to return a new Matrix. In principle, that could be solved by instead writing</p>
+<pre><code>Matrix m2 = m[0..2, 0..2];</code></pre>
+<p>but then we’d have to ban the use of <code>auto</code>. The solution I have adopted is to create a Submatrix, which is a reference to the underlying Matrix.</p>
+<pre><code>auto sm = m.reference;
+m2[0..2, 0..2] = sm[0..2, 0..2]; // Obviously a Submatrix, avoids a copy
+Matrix m3 = sm[0..2, 0..2]; // A new Matrix</code></pre>
+<p>I’ve tried it the other way around, where indexing a block of a Matrix always returns a Submatrix, but it’s too complicated that way. An unnecessary allocation, as much as it might slow your code, is better than the program dying with a segmentation fault. I don’t write <code>reference</code> very often in my own code. It’s a simple optimization in return for never having to worry about segfaults and incorrect results.</p>
+<h2 id="other-functions">Other Functions</h2>
+<p>These generally work as expected, so there’s not much elaboration here.</p>
+<h3 id="vector-rowsums">Vector rowSums()</h3>
+<h3 id="vector-colsums">Vector colSums()</h3>
+<h3 id="vector-rowmeans">Vector rowMeans()</h3>
+<h3 id="vector-colmeans">Vector colMeans()</h3>
+<h3 id="vector-rowlong-ii">Vector row(long ii)</h3>
+<p>Returns a newly allocated vector with the elements of row ii copied into it.</p>
+<h3 id="vector-columnlong-ii">Vector column(long ii)</h3>
+<p>Returns a newly allocated vector with the elements of column ii copied into it.</p>
+<h3 id="vector-lastrow">Vector lastrow()</h3>
+<h3 id="vector-lastcolumn">Vector lastcolumn()</h3>
+<h3 id="matrix-matmulmatrix-x-matrix-y">Matrix matmul(Matrix x, Matrix y)</h3>
+<p>Matrix multiplication</p>
+<h3 id="matrix-matmulvector-v-matrix-y">Matrix matmul(Vector v, Matrix y)</h3>
+<p>Convert the Vector to a Matrix, then apply matrix multiplication</p>
+<h3 id="matrix-matmulmatrix-x-vector-v">Matrix matmul(Matrix x, Vector v)</h3>
+<p>Convert the Vector to a Matrix, then apply matrix multiplication</p>
+<h3 id="matrix-elmulmatrix-x-matrix-y">Matrix elmul(Matrix x, Matrix y)</h3>
+<p>Element-by-element multiplication of x and y. Explicit naming is used to avoid confusion.</p>
+<h3 id="matrix-plusmatrix-x-matrix-y">Matrix plus(Matrix x, Matrix y)</h3>
+<h3 id="matrix-minusmatrix-x-matrix-y">Matrix minus(Matrix x, Matrix y)</h3>
+<h3 id="matrix-divmatrix-x-matrix-y">Matrix div(Matrix x, Matrix y)</h3>
+<h3 id="matrix-mulmatrix-x-double-y">Matrix mul(Matrix x, double y)</h3>
+<h3 id="matrix-plusmatrix-x-double-y">Matrix plus(Matrix x, double y)</h3>
+<h3 id="matrix-minusmatrix-x-double-y">Matrix minus(Matrix x, double y)</h3>
+<h3 id="matrix-divmatrix-x-double-y">Matrix div(Matrix x, double y)</h3>
+<h3 id="matrix-muldouble-y-matrix-x">Matrix mul(double y, Matrix x)</h3>
+<h3 id="matrix-plusdouble-y-matrix-x">Matrix plus(double y, Matrix x)</h3>
+<h3 id="matrix-minusdouble-y-matrix-x">Matrix minus(double y, Matrix x)</h3>
+<h3 id="matrix-divdouble-y-matrix-x">Matrix div(double y, Matrix x)</h3>
+<h3 id="matrix-tmatrix-x">Matrix t(Matrix x)</h3>
+<p>Transpose of x</p>
+<h3 id="matrix-solvematrix-x">Matrix solve(Matrix x)</h3>
+<p>Following R, returns the inverse of x. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
+<h3 id="matrix-solvematrix-x-matrix-y">Matrix solve(Matrix x, Matrix y)</h3>
+<p>Solution of a system of equations. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
+<h3 id="vector-solvematrix-x-vector-y">Vector solve(Matrix x, Vector y)</h3>
+<p>Solution of a system of equations. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
+<h3 id="matrix-invmatrix-x">Matrix inv(Matrix x)</h3>
+<p>Inverse of x. Same as <code>solve(x)</code>.</p>
+<h3 id="vector-diagmatrix-x">Vector diag(Matrix x)</h3>
+<p>Returns the diagonal of x as a Vector. Requires x to be square.</p>
+<h3 id="matrix-kroneckermatrix-x-matrix-y">Matrix kronecker(Matrix x, Matrix y)</h3>
+<h3 id="matrix-crossprodmatrix-x-matrix-y">Matrix crossprod(Matrix x, Matrix y)</h3>
+<h3 id="matrix-tcrossprodmatrix-x-matrix-y">Matrix tcrossprod(Matrix x, Matrix y)</h3>
+<h3 id="matrix-crossprodmatrix-x">Matrix crossprod(Matrix x)</h3>
+<h3 id="matrix-tcrossprodmatrix-x">Matrix tcrossprod(Matrix x)</h3>
+<h3 id="double-detmatrix-x">double det(Matrix x)</h3>
+<h3 id="matrix-diaglong-ii">Matrix diag(long ii)</h3>
+<p>Returns an (ii x ii) identity matrix.</p>
+<h3 id="matrix-eyelong-ii">Matrix eye(long ii)</h3>
+<p>Returns an (ii x ii) identity matrix.</p>
+<h3 id="matrix-cbindmatrix-m-vector-v">Matrix cbind(Matrix m, Vector v)</h3>
+<p>Add v as a new column to m. A new Matrix is allocated. m is not affected.</p>
+<h3 id="matrix-rbindmatrix-m-vector-v">Matrix rbind(Matrix m, Vector v)</h3>
+<p>Add v as a new row to m. A new Matrix is allocated. m is not affected.</p>
+<h3 id="matrix-cbindmatrix-m-double-arr">Matrix cbind(Matrix m, double[] arr)</h3>
+<p>Add arr as a new column to m. A new Matrix is allocated. m is not affected.</p>
+<h3 id="matrix-rbindmatrix-m-double-arr">Matrix rbind(Matrix m, double[] arr)</h3>
+<p>Add arr as a new row to m. A new Matrix is allocated. m is not affected.</p>
+<h2 id="other-structs">Other structs</h2>
+<h3 id="struct-svd">struct SVD</h3>
+<p>A struct holding the results of a call to <code>svd</code>. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/svd">the details here</a>.</p>
+<pre><code>auto s = SVD(m);
+Vector d = s.d; // See the R documentation for the interpretation of these members
+Matrix u = s.u;
+Matrix v = s.v;</code></pre>
+<h3 id="struct-eigen">struct Eigen</h3>
+<p>A struct holding the results of a call to <code>eigen</code>. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/eigen">the details here</a>.</p>
+<pre><code>auto e = Eigen(m);
+Vector values = e.values; // See the R documentation for the interpretation of these members
+Matrix vectors = m.vectors;</code></pre>
+<h3 id="column">Column</h3>
+<p>Creates a reference to one column of a matrix, for convenience. You can get and set individual elements. Is a range, so you can use it with foreach.</p>
+<h3 id="row">Row</h3>
+<p>Creates a reference to one row of a matrix, for convenience. You can get and set individual elements. Is a range, so you can use it with foreach.</p>
+<h3 id="columnfill">ColumnFill</h3>
+<p>Used to fill all the elements of one column of a matrix safely. See the discussion in <a href="vector.html#struct-fill">Fill for Vector</a>.</p>
+<h3 id="rowfill">RowFill</h3>
+<p>Used to fill all the elements of one column of a matrix safely. See the discussion in <a href="vector.html#struct-fill">Fill for Vector</a>.</p>
+<h3 id="diagonalfill">DiagonalFill</h3>
+<p>Used to fill all the elements of the diagonal of a matrix safely. See the discussion in <a href="vector.html#struct-fill">Fill for Vector</a>.</p>
+<h3 id="abovediagonalfill">AboveDiagonalFill</h3>
+<p>Used to fill all the elements above the diagonal of a matrix safely, filling by column. See the discussion in <a href="vector.html#struct-fill">Fill for Vector</a>.</p>
+<h3 id="belowdiagonalfill">BelowDiagonalFill</h3>
+<p>Used to fill all the elements below the diagonal of a matrix safely, filling by column. See the discussion in <a href="vector.html#struct-fill">Fill for Vector</a>.</p>
+<h3 id="matrixfill">MatrixFill</h3>
+<p>Used to fill all the elements of a matrix safely, filling by column. See the discussion in <a href="vector.html#struct-fill">Fill for Vector</a>.</p>
+<h3 id="blockfill">BlockFill</h3>
+<p>Used to fill all the elements of a block of a matrix safely, filling by column. See the discussion in <a href="vector.html#struct-fill">Fill for Vector</a>.</p>
+<h2 id="intmatrix">IntMatrix</h2>
+<p>Holds a matrx of int values.</p>
+<h2 id="boolmatrix">BoolMatrix</h2>
+<p>Holds a matrix of bool values.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>
