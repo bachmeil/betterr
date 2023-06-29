@@ -29,7 +29,7 @@ And the following functionality:
 
 # Documentation
 
-There's some documentation [at the website](https://bachmeil.github.io/betterr). Probably more useful is to look at the examples in the testing/ directory. For the most part, I've tried to maintain the behavior of R, so you can usually read the R documentation.
+There's some documentation [at the website](https://bachmeil.github.io/betterr). Probably more useful is to look at the examples in the [testing directory](https://github.com/bachmeil/betterr/tree/main/testing). For the most part, I've tried to maintain the behavior of R, so you can usually read the R documentation.
 
 # Example
 
