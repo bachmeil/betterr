@@ -13,12 +13,15 @@
 <body>
 <div class="container"><br><br>
 <h1 id="passing-data-from-d-to-r">Passing data from D to R</h1>
+<h2 id="when-r-allocates-the-memory">When R allocates the memory</h2>
 <p>In some cases, it is simplest to pass data from D to R in string format. For instance, this is about as efficient as you’ll get for setting a scalar integer inside R:</p>
 <pre><code>evalRQ(&quot;x &lt;- 3L&quot;);</code></pre>
 <p>The time it takes for R to evaluate that string is negligible. That wouldn’t work so well, however, if you have a 200x200 matrix. Suppose you allocate a Matrix <code>m</code> inside D that is the output of some linear algebra operations, and now that you’re done with efficiently carrying out those operations using an optimized BLAS, you want to create a variable named <code>mat</code> inside R so it can be used in a machine learning library.</p>
 <p>All you have to do is this:</p>
 <pre><code>toR(m.data.x, &quot;mat&quot;);</code></pre>
 <p><code>m.data</code> is where information about the data is stored inside a Matrix struct. <code>m.data.x</code> is the Robj that points to the data.</p>
+<h2 id="allocating-the-memory-in-d-and-working-with-the-data-in-r">Allocating the memory in D and working with the data in R</h2>
+<p>This requires the use of custom allocators. See the example <a href="https://github.com/bachmeil/betterr/blob/main/testing/testalloc.d">testalloc.d</a> to see how to proceed. Note that you are fully responsible for managing the memory in this case. If you free the memory but attempt to access the variable from R, your computer will explode, or something like that.</p>
 
 <br>
 <a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>

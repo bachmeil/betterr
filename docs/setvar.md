@@ -1,5 +1,7 @@
 # Passing data from D to R
 
+## When R allocates the memory
+
 In some cases, it is simplest to pass data from D to R in string format. For instance, this is about as efficient as you'll get for setting a scalar integer inside R:
 
 ```
@@ -15,3 +17,7 @@ toR(m.data.x, "mat");
 ```
 
 `m.data` is where information about the data is stored inside a Matrix struct. `m.data.x` is the Robj that points to the data.
+
+## Allocating the memory in D and working with the data in R
+
+This requires the use of custom allocators. See the example [testalloc.d](https://github.com/bachmeil/betterr/blob/main/testing/testalloc.d) to see how to proceed. Note that you are fully responsible for managing the memory in this case. If you free the memory but attempt to access the variable from R, your computer will explode, or something like that.
