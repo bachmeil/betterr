@@ -29,6 +29,7 @@
 <li><a href="#getting-multiple-elements">Getting multiple elements</a></li>
 <li><a href="#duplicating">Duplicating</a></li>
 <li><a href="#setting-elements">Setting elements</a></li>
+<li><a href="#names">Names</a></li>
 </ul></li>
 </ul>
 </div>
@@ -66,6 +67,11 @@ List z = x[[&quot;One Element&#39;s Name&quot;, &quot;Another Element&#39;s Name
 <p>Just as you can get elements by name or index number, you can also set elements that way.</p>
 <pre><code>x[&quot;Item Name&quot;] = rnorm(100);
 y[4] = 6.2;</code></pre>
+<h2 id="names">Names</h2>
+<p>You can get a string[] holding all names in the list by calling <code>names</code>:</p>
+<pre><code>x[&quot;Random&quot;] = rnorm(100);
+x[&quot;Not Random&quot;] = 6.2;
+writeln(x.names);</code></pre>
 
 <br>
 <a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>

@@ -78,4 +78,13 @@ x["Item Name"] = rnorm(100);
 y[4] = 6.2;
 ```
 
+## Names
+
+You can get a string[] holding all names in the list by calling `names`:
+
+```
+x["Random"] = rnorm(100);
+x["Not Random"] = 6.2;
+writeln(x.names);
+```
 

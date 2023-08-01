@@ -127,6 +127,10 @@ struct List {
     return List(data.name ~ "[" ~ to!string(i+1) ~ ":" ~ to!string(j) ~ "]");
   }
   
+  string[] names() {
+    return stringArray("names(" ~ data.name ~ ")");
+  }
+  
   int opDollar() {
     return data.x.length;
   }
