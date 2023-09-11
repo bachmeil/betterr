@@ -46,3 +46,39 @@ Those numbers are used within my program to set up the parallel RNG and
 appropriately divide the work.
 
 This is a simple approach to embarrassingly parallel tasks such as simulations.
+
+## Example
+
+Here's a quick example (omitting some imports) to show how you can run a betterr program in
+parallel that uses R's built-in parallel random number generator.
+
+```
+import betterr;
+
+void main(string[] args) {
+  auto thisProcess = args[1].to!int;
+  auto nprocs = args[2].to!int;
+  startR();
+  
+  // This sets the process to the value passed at the command line
+  // 500 is the seed, which is then the same for all instances of your
+  // program. The seed is 1 if you don't specify it.
+  prngInit(thisProcess, 500);
+  long reps = ceiling(1000/nprocs);
+  // Do whatever you need to do in your simulation
+  // Save the output to a file or do whatever you'd usually do with
+  // GNU parallel output.
+  closeR();
+}
+```
+
+To run this on eight cores, you'd compile it and then run it like this:
+
+```
+parallel ./example {} 8 ::: $(shell seq 1 8)
+```
+
+
+
+
+
