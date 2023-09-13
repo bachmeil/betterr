@@ -6,6 +6,16 @@ The name "better R" is loosely inspired by [Better C](https://dlang.org/spec/bet
 
 Feel free to use it, but things might break. There's no intention of turning this into a Dub package; I don't have time to maintain such a thing. Since it's open source, anyone that wants to is free to do so.
 
+# Recent changes
+
+Sep 13, 2023: Changed the destructor in RData to be `@nogc`. It previously used string concatenation, which would eventually lead to an invalid memory operation error, and that would occasionally cause big programs to crash. I solved this by creating a null-terminated char array in the constructor and making the destructor @nogc.
+
+Sep 11, 2023: Added an example to the documentation to show how to use parallel RNG in a program.
+
+Aug 1, 2023: Added a method that returns the names of all elements of a List.
+
+July 7, 2023: Added an example to the documentation to show how to use custom allocators to pass data allocated by D into R.
+
 # Current Status (June 2023)
 
 I've implemented support for the following data structures and types:
