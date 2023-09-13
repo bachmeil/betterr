@@ -76,7 +76,8 @@ struct ProtectedRObject {
 extern (C) {
 	void passToR(Robj x, char * name);
 	Robj evalInR(char * cmd);
-	void evalQuietlyInR(char * cmd);
+  // This needs to be @nogc so I can call it from the destructor
+	@nogc void evalQuietlyInR(char * cmd);
 	void setupRinC();
 	void teardownRinC();
 	alias startR = setupRinC;

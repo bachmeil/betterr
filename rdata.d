@@ -22,6 +22,14 @@ struct RDataStorage {
 struct RData {
   RDataStorage * data;
   alias data this;
+  /* This is the code used to tell R to remove the variable.
+   * I previously used string concatenation to do that inside the
+   * destructor, but the program died with an uninformative error
+   * message. We can avoid allocation by creating this array. We know
+   * the name is always 23 characters, calling rm adds 4, and it has
+   * to be null terminated, so it's always 28 characters. Send release.ptr
+   * to R. */
+  private char[28] release;
   
   this(string code) {
 		//writeln(code); // Useful for debugging, since this is where many errors occur
@@ -33,6 +41,14 @@ struct RData {
     data.name = "x" ~ ct[0..15] ~ ct[16..$];
     data.x = evalR(name ~ ` <- ` ~ code ~ `;` ~ name);
     data.refcount = 1;
+    
+    // See note above about release
+    release[0..3] = ['r', 'm', '('];
+    foreach(ii, char ch; name) {
+      release[ii+3] = name[ii];
+    }
+    release[26] = ')';
+    release[27] = '\0';
   }
   
   this(RData rd) {
@@ -71,12 +87,16 @@ struct RData {
 	 * Note that we don't need to mess with a check for data.x being null,
 	 * since we don't work with the pointer, and in fact the pointer is
 	 * not of any interest here. The use of pointers is more of an 
-	 * optimization that holds a reference to temporary data. */
-  ~this() {
+	 * optimization that holds a reference to temporary data. 
+   * 
+   * Note: Don't use string concatenation inside here. I did and my
+   * program died with an invalid memory operation error. You don't
+   * want to allocate in here. I've made this @nogc. */
+  @nogc ~this() {
 		if (data !is null) {
 			refcount -= 1;
 			if (refcount == 0) {
-				evalRQ(`rm(` ~ name ~ `)`);
+				evalQuietlyInR(release.ptr);
 			}
 		}
   }
