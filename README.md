@@ -8,6 +8,8 @@ Feel free to use it, but things might break. There's no intention of turning thi
 
 # Recent changes
 
+Nov 15, 2023: I'm doing some work outside the project that will be merged in when (if) it gets completed. Time is always scarce during fall semester.
+
 Sep 13, 2023: Changed the destructor in RData to be `@nogc`. It previously used string concatenation, which would eventually lead to an invalid memory operation error, and that would occasionally cause big programs to crash. I solved this by creating a null-terminated char array in the constructor and making the destructor @nogc.
 
 Sep 11, 2023: Added an example to the documentation to show how to use parallel RNG in a program.
