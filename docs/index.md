@@ -151,3 +151,4 @@ extern(C) {
 
 - [Efficiency](efficiency.html)
 - [Scaling to Zero](scaling.html)
+- [Some Ways To Improve This Project](improve.html)
