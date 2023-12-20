@@ -8,6 +8,8 @@ Feel free to use it, but things might break. There's no intention of turning thi
 
 # Recent changes
 
+Dec 20, 2023: I've started adding Windows support. In terms of functionality, there's only basic stuff, which you can see by looking at testwin.d and rwin.d. I originally tried to call the dll files directly, which I thought would make things easy for me, but in the end concluded it was to complicated and fragile for anyone else to use. So I went the route manually loading functions from the DLL files. Getting it to work (or, more accurately, learning what I'm doing) was the hard part. Adding the remaining functionality is straightforward. From the perspective of the user of betterr, there's not much intervention or overhead, since you don't have to mess around with linking. I don't have a timetable for completing Windows support since I don't use Windows.
+
 Nov 15, 2023: I'm doing some work outside the project that will be merged in when (if) it gets completed. Time is always scarce during fall semester.
 
 Sep 13, 2023: Changed the destructor in RData to be `@nogc`. It previously used string concatenation, which would eventually lead to an invalid memory operation error, and that would occasionally cause big programs to crash. I solved this by creating a null-terminated char array in the constructor and making the destructor @nogc.
