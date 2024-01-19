@@ -291,299 +291,301 @@ double mean(double x) {
   return x;
 }
 
-/* If you don't want to remove NaN values, so if there are any, it
- * returns double.nan. */
-double mean(double[] x) {
-  import mir.stat.descriptive.univariate;
-  return mir.stat.descriptive.univariate.mean(x);
-}
-
-/* If you want the mean of a Vector or Matrix, can avoid calling into R
- * Returns double.nan if any missing values. */
-double mean(T)(T v) {
-  return mean(v.ptr[0..v.length]);
-}
-
-/* Maybe a better way to do this, but it allows me to pass the filtered
- * values to this function without first converting to double[]. */
-double mean(string filtered, T)(T v) {
-  import mir.stat.descriptive.univariate;
-  return mir.stat.descriptive.univariate.mean(v);
-}
-
-/* This is hopefully faster than shipping it to R. */
-double mean(double[] x, bool narm=false) {
-	if (!narm) {
-		return mean(x);
+version(mir) {
+	/* If you don't want to remove NaN values, so if there are any, it
+	 * returns double.nan. */
+	double mean(double[] x) {
+		import mir.stat.descriptive.univariate;
+		return mir.stat.descriptive.univariate.mean(x);
 	}
-	import std.math.traits: isNaN;
-  import std.algorithm.iteration: filter;
-  return mean!""(x.filter!(a => !isNaN(a)));
-}
 
-double mean(T)(T x, bool narm=false) {
-  return mean(x.ptr[0..x.length], narm);
-}
-
-/* If you want to trim, it's going to R. It would be a lot of work for
- * a minor use case. The cost of copying at that point is small
- * relative to all the other stuff that needs to be done for a trimmed
- * mean calculation. */
-double mean(double[] x, double trim=0, bool narm=false) {
-	return mean(Vector(x), trim, narm);
-}
-
-double mean(T)(T v, double trim=0, bool narm=false) {
-	return evalR("mean(" ~ v.name ~ ", trim=" ~ trim.to!string ~ ", na.rm=" ~ boolString(narm) ~ ")").scalar;
-}
-
-/* Now do median */
-double median(double x) {
-  return x;
-}
-
-/* If you don't want to remove NaN values, so if there are any, it
- * returns double.nan. */
-double median(double[] x) {
-  import mir.stat.descriptive.univariate;
-  return mir.stat.descriptive.univariate.median(x);
-}
-
-/* If you want the mean of a Vector or Matrix, can avoid calling into R
- * Returns double.nan if any missing values. */
-double median(T)(T v) {
-  return median(v.ptr[0..v.length]);
-}
-
-/* Maybe a better way to do this, but it allows me to pass the filtered
- * values to this function without first converting to double[]. */
-double median(string filtered, T)(T v) {
-  import mir.stat.descriptive.univariate;
-  return mir.stat.descriptive.univariate.median(v);
-}
-
-/* This is hopefully faster than shipping it to R. */
-double median(double[] x, bool narm=false) {
-	if (!narm) {
-		return mean(x);
+	/* If you want the mean of a Vector or Matrix, can avoid calling into R
+	 * Returns double.nan if any missing values. */
+	double mean(T)(T v) {
+		return mean(v.ptr[0..v.length]);
 	}
-	import std.math.traits: isNaN;
-  import std.algorithm.iteration: filter;
-  return median!""(x.filter!(a => !isNaN(a)).array);
-}
 
-double median(T)(T x, bool narm=false) {
-  return median(x.ptr[0..x.length], narm);
-}
-
-/* And sum */
-double sum(double x) {
-  return x;
-}
-
-/* If you don't want to remove NaN values, so if there are any, it
- * returns double.nan. */
-double sum(double[] x) {
-  import mir.math.sum;
-  return mir.math.sum.sum!"fast"(x);
-}
-
-/* If you want the sum of a Vector or Matrix, can avoid calling into R
- * Returns double.nan if any missing values. */
-double sum(T)(T v) {
-  return sum(v.ptr[0..v.length]);
-}
-
-/* Maybe a better way to do this, but it allows me to pass the filtered
- * values to this function without first converting to double[]. */
-double sum(string filtered, T)(T v) {
-  import mir.math.sum;
-  return mir.math.sum.sum!"fast"(v);
-}
-
-/* This is hopefully faster than shipping it to R. */
-double sum(double[] x, bool narm=false) {
-	if (!narm) {
-		return sum(x);
+	/* Maybe a better way to do this, but it allows me to pass the filtered
+	 * values to this function without first converting to double[]. */
+	double mean(string filtered, T)(T v) {
+		import mir.stat.descriptive.univariate;
+		return mir.stat.descriptive.univariate.mean(v);
 	}
-	import std.math.traits: isNaN;
-  import std.algorithm.iteration: filter;
-  return sum!""(x.filter!(a => !isNaN(a)));
-}
 
-double sum(T)(T x, bool narm=false) {
-  return sum(x.ptr[0..x.length], narm);
-}
+	/* This is hopefully faster than shipping it to R. */
+	double mean(double[] x, bool narm=false) {
+		if (!narm) {
+			return mean(x);
+		}
+		import std.math.traits: isNaN;
+		import std.algorithm.iteration: filter;
+		return mean!""(x.filter!(a => !isNaN(a)));
+	}
+
+	double mean(T)(T x, bool narm=false) {
+		return mean(x.ptr[0..x.length], narm);
+	}
+
+	/* If you want to trim, it's going to R. It would be a lot of work for
+	 * a minor use case. The cost of copying at that point is small
+	 * relative to all the other stuff that needs to be done for a trimmed
+	 * mean calculation. */
+	double mean(double[] x, double trim=0, bool narm=false) {
+		return mean(Vector(x), trim, narm);
+	}
+
+	double mean(T)(T v, double trim=0, bool narm=false) {
+		return evalR("mean(" ~ v.name ~ ", trim=" ~ trim.to!string ~ ", na.rm=" ~ boolString(narm) ~ ")").scalar;
+	}
+
+	/* Now do median */
+	double median(double x) {
+		return x;
+	}
+
+	/* If you don't want to remove NaN values, so if there are any, it
+	 * returns double.nan. */
+	double median(double[] x) {
+		import mir.stat.descriptive.univariate;
+		return mir.stat.descriptive.univariate.median(x);
+	}
+
+	/* If you want the mean of a Vector or Matrix, can avoid calling into R
+	 * Returns double.nan if any missing values. */
+	double median(T)(T v) {
+		return median(v.ptr[0..v.length]);
+	}
+
+	/* Maybe a better way to do this, but it allows me to pass the filtered
+	 * values to this function without first converting to double[]. */
+	double median(string filtered, T)(T v) {
+		import mir.stat.descriptive.univariate;
+		return mir.stat.descriptive.univariate.median(v);
+	}
+
+	/* This is hopefully faster than shipping it to R. */
+	double median(double[] x, bool narm=false) {
+		if (!narm) {
+			return mean(x);
+		}
+		import std.math.traits: isNaN;
+		import std.algorithm.iteration: filter;
+		return median!""(x.filter!(a => !isNaN(a)).array);
+	}
+
+	double median(T)(T x, bool narm=false) {
+		return median(x.ptr[0..x.length], narm);
+	}
+
+	/* And sum */
+	double sum(double x) {
+		return x;
+	}
+
+	/* If you don't want to remove NaN values, so if there are any, it
+	 * returns double.nan. */
+	double sum(double[] x) {
+		import mir.math.sum;
+		return mir.math.sum.sum!"fast"(x);
+	}
+
+	/* If you want the sum of a Vector or Matrix, can avoid calling into R
+	 * Returns double.nan if any missing values. */
+	double sum(T)(T v) {
+		return sum(v.ptr[0..v.length]);
+	}
+
+	/* Maybe a better way to do this, but it allows me to pass the filtered
+	 * values to this function without first converting to double[]. */
+	double sum(string filtered, T)(T v) {
+		import mir.math.sum;
+		return mir.math.sum.sum!"fast"(v);
+	}
+
+	/* This is hopefully faster than shipping it to R. */
+	double sum(double[] x, bool narm=false) {
+		if (!narm) {
+			return sum(x);
+		}
+		import std.math.traits: isNaN;
+		import std.algorithm.iteration: filter;
+		return sum!""(x.filter!(a => !isNaN(a)));
+	}
+
+	double sum(T)(T x, bool narm=false) {
+		return sum(x.ptr[0..x.length], narm);
+	}
 
 
-/* Returns NaN if any are NaN */
-double max(double[] x) {
-  import std.algorithm.iteration: fold;
-  import std.math.traits: isNaN;
-  return x.fold!((a,b) => a.isNaN || b.isNaN? real.nan: a < b? b: a);
-}
+	/* Returns NaN if any are NaN */
+	double max(double[] x) {
+		import std.algorithm.iteration: fold;
+		import std.math.traits: isNaN;
+		return x.fold!((a,b) => a.isNaN || b.isNaN? real.nan: a < b? b: a);
+	}
 
-double max(T)(T x) {
-  return max(x.ptr[0..x.length]);
-}
+	double max(T)(T x) {
+		return max(x.ptr[0..x.length]);
+	}
 
-/* Set narm to true to remove NaN values first */
-double max(double[] x, bool narm=false) {
-  if (!narm) {
-    return max(x);
-  }
-  import std.algorithm.searching: maxElement;
-  import std.algorithm.iteration: filter;
-  import std.math.traits: isNaN;
-  auto tmp = x.filter!(a => !isNaN(a));
-  if (tmp.empty) {
-    return double.nan;
-  } else {
-    return tmp.maxElement;
-  }
-}
+	/* Set narm to true to remove NaN values first */
+	double max(double[] x, bool narm=false) {
+		if (!narm) {
+			return max(x);
+		}
+		import std.algorithm.searching: maxElement;
+		import std.algorithm.iteration: filter;
+		import std.math.traits: isNaN;
+		auto tmp = x.filter!(a => !isNaN(a));
+		if (tmp.empty) {
+			return double.nan;
+		} else {
+			return tmp.maxElement;
+		}
+	}
 
-double max(T)(T x, bool narm=false) {
-  if (!narm) {
-    return max(x);
-  } else {
-    return max(x.ptr[0..x.length]);
-  }
-}
+	double max(T)(T x, bool narm=false) {
+		if (!narm) {
+			return max(x);
+		} else {
+			return max(x.ptr[0..x.length]);
+		}
+	}
 
-/* Returns NaN if any are NaN */
-double min(double[] x) {
-  import std.algorithm.iteration: fold;
-  import std.math.traits: isNaN;
-  return x.fold!((a,b) => a.isNaN || b.isNaN? real.nan: a < b? a: b);
-}
+	/* Returns NaN if any are NaN */
+	double min(double[] x) {
+		import std.algorithm.iteration: fold;
+		import std.math.traits: isNaN;
+		return x.fold!((a,b) => a.isNaN || b.isNaN? real.nan: a < b? a: b);
+	}
 
-double min(T)(T x) {
-  return min(x.ptr[0..x.length]);
-}
+	double min(T)(T x) {
+		return min(x.ptr[0..x.length]);
+	}
 
-/* Set narm to true to remove NaN values first */
-double min(double[] x, bool narm=false) {
-  if (!narm) {
-    return max(x);
-  }
-  import std.algorithm.searching: minElement;
-  import std.algorithm.iteration: filter;
-  import std.math.traits: isNaN;
-  auto tmp = x.filter!(a => !isNaN(a));
-  if (tmp.empty) {
-    return double.nan;
-  } else {
-    return tmp.minElement;
-  }
-}
+	/* Set narm to true to remove NaN values first */
+	double min(double[] x, bool narm=false) {
+		if (!narm) {
+			return max(x);
+		}
+		import std.algorithm.searching: minElement;
+		import std.algorithm.iteration: filter;
+		import std.math.traits: isNaN;
+		auto tmp = x.filter!(a => !isNaN(a));
+		if (tmp.empty) {
+			return double.nan;
+		} else {
+			return tmp.minElement;
+		}
+	}
 
-double min(T)(T x, bool narm=false) {
-  if (!narm) {
-    return min(x);
-  } else {
-    return min(x.ptr[0..x.length], true);
-  }
-}
+	double min(T)(T x, bool narm=false) {
+		if (!narm) {
+			return min(x);
+		} else {
+			return min(x.ptr[0..x.length], true);
+		}
+	}
 
-double sd(double[] x) {
-  import mir.math.stat;
-  return mir.math.stat.standardDeviation(x);
-}
+	double sd(double[] x) {
+		import mir.math.stat;
+		return mir.math.stat.standardDeviation(x);
+	}
 
-double sd(T)(T x) {
-  return sd(x.ptr[0..x.length]);
-}
+	double sd(T)(T x) {
+		return sd(x.ptr[0..x.length]);
+	}
 
-double sd(double[] x, bool narm=false) {
-  if (!narm) {
-    return sd(x);
-  } else {
-    import std.algorithm.iteration: filter;
-    import std.math.traits: isNaN;
-    import mir.math.stat;
-    return mir.math.stat.standardDeviation(x.filter!(a => !isNaN(a)));
-  }
-}
+	double sd(double[] x, bool narm=false) {
+		if (!narm) {
+			return sd(x);
+		} else {
+			import std.algorithm.iteration: filter;
+			import std.math.traits: isNaN;
+			import mir.math.stat;
+			return mir.math.stat.standardDeviation(x.filter!(a => !isNaN(a)));
+		}
+	}
 
-double sd(T)(T x, bool narm=false) {
-  return sd(x.ptr[0..x.length], narm);
-}
+	double sd(T)(T x, bool narm=false) {
+		return sd(x.ptr[0..x.length], narm);
+	}
 
-double var(double[] x) {
-  import mir.math.stat;
-  return mir.math.stat.variance(x);
-}
+	double var(double[] x) {
+		import mir.math.stat;
+		return mir.math.stat.variance(x);
+	}
 
-double var(T)(T x) {
-  return var(x.ptr[0..x.length]);
-}
+	double var(T)(T x) {
+		return var(x.ptr[0..x.length]);
+	}
 
-double var(double[] x, bool narm=false) {
-  if (!narm) {
-    return var(x);
-  } else {
-    import std.algorithm.iteration: filter;
-    import std.math.traits: isNaN;
-    import mir.math.stat;
-    return mir.math.stat.variance(x.filter!(a => !isNaN(a)));
-  }
-}
+	double var(double[] x, bool narm=false) {
+		if (!narm) {
+			return var(x);
+		} else {
+			import std.algorithm.iteration: filter;
+			import std.math.traits: isNaN;
+			import mir.math.stat;
+			return mir.math.stat.variance(x.filter!(a => !isNaN(a)));
+		}
+	}
 
-double var(T)(T x, bool narm=false) {
-  return var(x.ptr[0..x.length], narm);
-}
+	double var(T)(T x, bool narm=false) {
+		return var(x.ptr[0..x.length], narm);
+	}
 
-double quantile(double[] x, double p) {
-  import mir.stat.descriptive.univariate;
-  return mir.stat.descriptive.univariate.quantile(x, p);
-}
+	double quantile(double[] x, double p) {
+		import mir.stat.descriptive.univariate;
+		return mir.stat.descriptive.univariate.quantile(x, p);
+	}
 
-/* By default, double.nan is counted as the median of the others */
-double quantile(double[] x, double p, bool narm) {
-  if (!narm) {
-    return quantile(x, p);
-  } else {
-    import std.algorithm.iteration: filter;
-    import std.math.traits: isNaN;
-    return quantile(x.filter!(a => !isNaN(a)).array, p);
-  }
-}
+	/* By default, double.nan is counted as the median of the others */
+	double quantile(double[] x, double p, bool narm) {
+		if (!narm) {
+			return quantile(x, p);
+		} else {
+			import std.algorithm.iteration: filter;
+			import std.math.traits: isNaN;
+			return quantile(x.filter!(a => !isNaN(a)).array, p);
+		}
+	}
 
-double quantile(T)(T x, double p) {
-  return quantile(x.ptr[0..x.length], p);
-}
+	double quantile(T)(T x, double p) {
+		return quantile(x.ptr[0..x.length], p);
+	}
 
-double quantile(T)(T x, double p, bool narm) {
-  return quantile(x.ptr[0..x.length], p, narm);
-}
+	double quantile(T)(T x, double p, bool narm) {
+		return quantile(x.ptr[0..x.length], p, narm);
+	}
 
-double[] quantile(double[] x, double[] p) {
-  import mir.stat.descriptive.univariate;
-  return mir.stat.descriptive.univariate.quantile!("type7", false, true)(x, p.dup).array;
-}
+	double[] quantile(double[] x, double[] p) {
+		import mir.stat.descriptive.univariate;
+		return mir.stat.descriptive.univariate.quantile!("type7", false, true)(x, p.dup).array;
+	}
 
-double[] quantile(T)(T x, double[] p) {
-  return quantile(x.ptr[0..x.length], p.dup);
-}
+	double[] quantile(T)(T x, double[] p) {
+		return quantile(x.ptr[0..x.length], p.dup);
+	}
 
-double[] quantile(double[] x, double[] p, bool narm) {
-  if (!narm) {
-    return quantile(x, p);
-  } else {
-    import mir.stat.descriptive.univariate;
-    import std.algorithm.iteration: filter;
-    import std.math.traits: isNaN;
-    return mir.stat.descriptive.univariate.quantile!("type7", false, true)(x.filter!(a => !isNaN(a)).array, p.dup).array;
-  }
-}
+	double[] quantile(double[] x, double[] p, bool narm) {
+		if (!narm) {
+			return quantile(x, p);
+		} else {
+			import mir.stat.descriptive.univariate;
+			import std.algorithm.iteration: filter;
+			import std.math.traits: isNaN;
+			return mir.stat.descriptive.univariate.quantile!("type7", false, true)(x.filter!(a => !isNaN(a)).array, p.dup).array;
+		}
+	}
 
-double[] quantile(T)(T x, double[] p, bool narm) {
-  if (!narm) {
-    return quantile(x, p);
-  } else {
-    return quantile(x.ptr[0..x.length], p.dup, narm);
-  }
+	double[] quantile(T)(T x, double[] p, bool narm) {
+		if (!narm) {
+			return quantile(x, p);
+		} else {
+			return quantile(x.ptr[0..x.length], p.dup, narm);
+		}
+	}
 }
 
 string boolString(bool x) {
