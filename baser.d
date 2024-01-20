@@ -291,6 +291,22 @@ double mean(double x) {
   return x;
 }
 
+double median(double x) {
+	return x;
+}
+
+double sum(double x) {
+	return x;
+}
+
+double max(double x) {
+	return x;
+}
+
+double min(double x) {
+	return x;
+}
+
 version(mir) {
 	/* If you don't want to remove NaN values, so if there are any, it
 	 * returns double.nan. */
@@ -338,11 +354,6 @@ version(mir) {
 		return evalR("mean(" ~ v.name ~ ", trim=" ~ trim.to!string ~ ", na.rm=" ~ boolString(narm) ~ ")").scalar;
 	}
 
-	/* Now do median */
-	double median(double x) {
-		return x;
-	}
-
 	/* If you don't want to remove NaN values, so if there are any, it
 	 * returns double.nan. */
 	double median(double[] x) {
@@ -375,11 +386,6 @@ version(mir) {
 
 	double median(T)(T x, bool narm=false) {
 		return median(x.ptr[0..x.length], narm);
-	}
-
-	/* And sum */
-	double sum(double x) {
-		return x;
 	}
 
 	/* If you don't want to remove NaN values, so if there are any, it
@@ -586,16 +592,98 @@ version(mir) {
 			return quantile(x.ptr[0..x.length], p.dup, narm);
 		}
 	}
-// Not using Mir
+// Not using Mir, use dstats and Phobos instead
+// It's easiest just to add Mir as a dependency and call it directly if that's what you want
+// I'm going to strip down dstats as much as possible
 } else {
-	// mean
-	// median
-	// sum
-	// max
-	// min
-	// sd
-	// var
-	// quantile
+	double mean(double[] x) {
+		import dstats.summary: mean;
+		return mean(x);
+	}
+	
+	double mean(Vector v) {
+		return mean(v.ptr[0..v.rows]);
+	}
+
+	double median(double[] x) {
+		import dstats.summary: median;
+		return median(x);
+	}
+	
+	double median(Vector v) {
+		return median(v.ptr[0..v.rows]);
+	}
+	
+	double sum(double[] x) {
+		import dstats.summary: sum;
+		return sum(x);
+	}
+	
+	double sum(Vector v) {
+		return sum(v.ptr[0..v.rows]);
+	}
+	
+	double max(double[] x) {
+		import std.algorithm.searching: maxElement;
+		return maxElement(x);
+	}
+	
+	double max(Vector v) {
+		return max(v.ptr[0..v.rows]);
+	}
+	
+	double min(double[] x) {
+		import std.algorithm.searching: minElement;
+		return minElement(x);
+	}
+	
+	double min(Vector v) {
+		return min(v.ptr[0..v.rows]);
+	}
+	
+	double sd(double[] x) {
+		import dstats.summary: stdev;
+		return stdev(x);
+	}
+	
+	double sd(Vector v) {
+		return sd(v.ptr[0..v.rows]);
+	}
+	
+	double var(double[] x) {
+		import dstats.summary: variance;
+		return variance(x);
+	}
+	
+	double var(Vector v) {
+		return var(v.ptr[0..v.rows]);
+	}
+	
+	// Warning: Converts to Vector and then calls the R function
+	// If doing many times, use Mir by setting the version to mir
+	double quantile(double[] x, double p) {
+		auto rx = Vector(x);
+		return quantile(rx, p);
+	}
+	
+	Vector quantile(double[] x, double[] p) {
+		auto rx = Vector(x);
+		auto rp = Vector(p);
+		return quantile(rx, rp);
+	}
+	
+	double quantile(Vector v, double p) {
+		return Rf_asReal(evalR(`quantile(` ~ v.name ~ `, probs = ` ~ p.to!string ~ `)`));
+	}
+	
+	Vector quantile(Vector v, double[] p) {
+		auto rp = Vector(p);
+		return quantile(v, rp);
+	}
+	
+	Vector quantile(Vector v, Vector p) {
+		return Vector(`quantile(` ~ v.name ~ `, probs = ` ~ p.name ~ `)`);
+	}
 }
 
 string boolString(bool x) {

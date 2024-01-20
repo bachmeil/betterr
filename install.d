@@ -1,6 +1,15 @@
 import std.algorithm, std.array, std.file, std.path;
 import std.process, std.stdio, std.string;
 
+/* Add these options:
+ * 
+ * --full: Install everything
+ * --link: Create a symbolic link rather than copying (updates are automatic but might break your code)
+ * --dir: Source directory (use the current directory if not specified)
+ * --target: Target directory (required if no dir option; optional otherwise, using the current directory if not specified)
+ * --force: Don't do any checks for existing directories or files; things may possibly get overwritten
+ */
+
 void main(string[] args) {
 	assert(args.length > 1, "You need to supply an installation directory");
 	string rinsideLocation = executeShell(`Rscript -e "cat(find.package('RInside'))"`).output;
