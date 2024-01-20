@@ -55,8 +55,6 @@ import std.functional, std.conv, std.range, std.array,
 
 import std.algorithm : reduce, min, max, swap, map, filter;
 
-import dstats.alloc;
-
 /**Finds median of an input range in O(N) time on average.  In the case of an
  * even number of elements, the mean of the two middle elements is returned.
  * This is a convenience founction designed specifically for numeric types,
@@ -65,11 +63,17 @@ import dstats.alloc;
  * as selecting any position in the ordering, can be found at
  * dstats.sort.quickSelect() and dstats.sort.partitionK().
  * Allocates memory, does not reorder input data.*/
-double median(T)(T data)
-if(doubleInput!(T)) {
-    auto alloc = newRegionAllocator();
-    auto dataDup = alloc.array(data);
-    return medianPartition(dataDup);
+// This is the old code. Changing to the double[] version below eliminates
+// the dependency on dstats.alloc altogether.
+//~ double median(T)(T data)
+//~ if(doubleInput!(T)) {
+    //~ auto alloc = newRegionAllocator();
+    //~ auto dataDup = alloc.array(data);
+    //~ return medianPartition(dataDup);
+//~ }
+
+double median(double[] x) {
+	return medianPartition(x);
 }
 
 /**Median finding as in median(), but will partition input data such that
