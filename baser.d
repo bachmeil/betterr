@@ -586,6 +586,16 @@ version(mir) {
 			return quantile(x.ptr[0..x.length], p.dup, narm);
 		}
 	}
+// Not using Mir
+} else {
+	// mean
+	// median
+	// sum
+	// max
+	// min
+	// sd
+	// var
+	// quantile
 }
 
 string boolString(bool x) {

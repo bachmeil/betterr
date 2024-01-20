@@ -113,6 +113,30 @@ struct Vector {
     return opSlice(0, rows);
   }
   
+  void opSliceAssign(double a) {
+		this.ptr[0..this.rows] = a;
+	}
+	
+	void opSliceAssign(double[] v) {
+		enforce(v.length == this.rows, "Wrong number of elements");
+		this.ptr[0..this.rows] = v[];
+	}
+	
+	void opSliceAssign(double a, long ind0, long ind1) {
+		enforce(ind0 >= 0, "First index cannot be negative");
+		enforce(ind1 <= this.rows, "Second index out of bounds");
+		enforce(ind0 <= ind1, "Second index cannot be less than the first");
+		this.ptr[ind0..ind1] = a;
+	}
+  
+	void opSliceAssign(double[] v, long ind0, long ind1) {
+		enforce(ind0 >= 0, "First index cannot be negative");
+		enforce(ind1 <= this.rows, "Second index out of bounds");
+		enforce(ind0 <= ind1, "Second index cannot be less than the first");
+		enforce(ind1-ind0 == v.length, "Wrong number of elements");
+		this.ptr[ind0..ind1] = v[];
+	}
+  
   double last() {
 		return this[rows-1];
 	}

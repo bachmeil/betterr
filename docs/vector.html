@@ -44,6 +44,10 @@
 <ul>
 <li><a href="#vector-opslicelong-i-long-j">Vector opSlice(long i, long j)</a></li>
 <li><a href="#vector-opslice">Vector opSlice()</a></li>
+<li><a href="#void-opsliceassigndouble-a">void opSliceAssign(double a)</a></li>
+<li><a href="#void-opsliceassigndouble-v">void opSliceAssign(double[] v)</a></li>
+<li><a href="#void-opsliceassigndouble-a-long-ind0-long-ind1">void opSliceAssign(double a, long ind0, long ind1)</a></li>
+<li><a href="#void-opsliceassigndouble-v-long-ind0-long-ind1">void opSliceAssign(double[] v, long ind0, long ind1)</a></li>
 </ul></li>
 <li><a href="#range-support">Range support</a></li>
 <li><a href="#miscellaneous-functions">Miscellaneous functions</a>
@@ -75,20 +79,62 @@
 <pre><code>long rows;
 RData data;
 double * ptr;</code></pre>
+<p>You can use assignment and slicing as in languages like R and Matlab. Keep in mind that slices do not include the last element. Here’s an example:</p>
+<pre><code>// Create a new vector with space for five elements
+auto x = Vector(5);
+
+// Set all five elements to 1.7
+x = 1.7;
+
+// Print x with a message preceding it
+x.print(&quot;Test vector&quot;);
+
+// You can also use the empty slice operator to set all elements to the same scalar
+x[] = -6.2;
+x.print(&quot;Should be -6.2&quot;);
+
+// You can use the empty slice operator to copy in the elements of a double[]
+// There is a check that the lengths match
+x[] = [1.1, 2.2, 3.3, 4.4, 5.5];
+x.print(&quot;Should be increasing values&quot;);
+
+// You can set a subset of the vector to the same scalar
+x[2..5] = -1.2;
+x.print(&quot;Last three elements should be -1.2&quot;);
+
+// You can also set a subset of the vector to the elements of a double[]
+// There&#39;s a check that the lengths match
+x[2..5] = [-0.2, -0.3, -0.4];
+x.print(&quot;Last three elements changed&quot;);</code></pre>
 <h1 id="functionality">Functionality</h1>
 <h2 id="construction">Construction</h2>
 <h3 id="thisstring-code">this(string code)</h3>
+<p>You can pass a string of R code and store the result as a Vector.</p>
+<pre><code>auto x = Vector(rnorm(10));</code></pre>
 <h3 id="thislong-r">this(long r)</h3>
+<p>You can send the number of elements and a Vector with that many elements will be allocated. The elements are initialized to zero.</p>
+<pre><code>auto x = Vector(12)</code></pre>
 <h3 id="void-initializelong-r">void initialize(long r)</h3>
 <p>This is used for assigning to a zero-length Vector. Otherwise there is no way to assign to a Vector that is part of a struct that has already been constructed, since the bounds checking will fail.</p>
 <h3 id="thisvector-v">this(Vector v)</h3>
 <p>Makes a copy in R, but forces the allocation of a new Vector.</p>
+<pre><code>auto y3 = Vector(x);</code></pre>
 <h3 id="thisrdata-rd">this(RData rd)</h3>
 <p>Makes a copy in R, but forces the allocation of a new Vector.</p>
 <h3 id="thisdouble-v">this(double[] v)</h3>
+<p>Allocates a new Vector and copies the elements of v into it.</p>
+<pre><code>auto x = Vector([1.1, 2.2, 3.3]);</code></pre>
 <h3 id="thislong-v">this(long[] v)</h3>
 <h3 id="thisint-v">this(int[] v)</h3>
 <h2 id="indexing">Indexing</h2>
+<pre><code>// Indexing
+v[1]
+
+// Grab the first, third, and fifth elements
+v[[0, 2, 4]]
+
+// Set elements
+v[1] = 3.3;</code></pre>
 <h3 id="double-opindexlong-r">double opIndex(long r)</h3>
 <p>Get one element. Indexing starts at zero.</p>
 <h3 id="vector-opindexlong-obs">Vector opIndex(long[] obs)</h3>
@@ -105,6 +151,12 @@ double * ptr;</code></pre>
 <p><code>this[0..3]</code> returns a new Vector with three elements. <code>j</code> is not included.</p>
 <h3 id="vector-opslice">Vector opSlice()</h3>
 <p><code>this[]</code> returns a new Vector with all elements of <code>this</code>.</p>
+<h3 id="void-opsliceassigndouble-a">void opSliceAssign(double a)</h3>
+<p>This does the same thing as opAssign.</p>
+<h3 id="void-opsliceassigndouble-v">void opSliceAssign(double[] v)</h3>
+<p>This does the same thing as opAssign.</p>
+<h3 id="void-opsliceassigndouble-a-long-ind0-long-ind1">void opSliceAssign(double a, long ind0, long ind1)</h3>
+<h3 id="void-opsliceassigndouble-v-long-ind0-long-ind1">void opSliceAssign(double[] v, long ind0, long ind1)</h3>
 <h2 id="range-support">Range support</h2>
 <p>A <code>Vector</code> is a range. You can do this type of thing:</p>
 <pre><code>auto v = Vector([1.1, 2.2, 3.3]);
