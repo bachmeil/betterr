@@ -506,39 +506,6 @@ if(doubleIterable!(T)) {
     return meanStdev(data).stdev;
 }
 
-/**Excess kurtosis relative to normal distribution.  High kurtosis means that
- * the variance is due to infrequent, large deviations from the mean.  Low
- * kurtosis means that the variance is due to frequent, small deviations from
- * the mean.  The normal distribution is defined as having kurtosis of 0.
- * Input must be an input range with elements implicitly convertible to double.*/
-double kurtosis(T)(T data)
-if(doubleIterable!(T)) {
-    // This is too infrequently used and has too much ILP within a single
-    // iteration to be worth ILP optimizing.
-    Summary kCalc;
-    foreach(elem; data) {
-        kCalc.put(elem);
-    }
-    return kCalc.kurtosis;
-}
-
-/**Skewness is a measure of symmetry of a distribution.  Positive skewness
- * means that the right tail is longer/fatter than the left tail.  Negative
- * skewness means the left tail is longer/fatter than the right tail.  Zero
- * skewness indicates a symmetrical distribution.  Input must be an input
- * range with elements implicitly convertible to double.*/
-double skewness(T)(T data)
-if(doubleIterable!(T)) {
-    // This is too infrequently used and has too much ILP within a single
-    // iteration to be worth ILP optimizing.
-    Summary sCalc;
-    foreach(elem; data) {
-        sCalc.put(elem);
-    }
-    return sCalc.skewness;
-}
-
-
 /* This is all that was needed from dstats.sort. */
 
 
