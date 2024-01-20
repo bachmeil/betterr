@@ -18,6 +18,8 @@ void main(string[] args) {
 	foreach(src; sourceFiles) {
 		copy(src, args[1] ~ "/betterr/" ~ src);
 	}
+	writeln(executeShell(`mkdir -p ` ~ args[1] ~ `/dstats`).output);
+	copy("dstats/summary.d", args[1] ~ "/dstats/summary.d");
 	std.file.write(args[1] ~ "/Makefile", "LINK=-L" ~ rinsideLocation ~ "/lib/libRInside.so -L-lR\n\napp:\n\tldmd2 -i file.d $(LINK)\n");
 }
 
