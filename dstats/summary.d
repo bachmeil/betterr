@@ -51,15 +51,11 @@
 module dstats.summary;
 
 import std.functional, std.conv, std.range, std.array,
-    std.traits, std.math;
+    std.traits, std.math, std.typetuple;
 
 import std.algorithm : reduce, min, max, swap, map, filter;
 
-import dstats.sort, dstats.base, dstats.alloc;
-
-version(unittest) {
-    import std.stdio, dstats.random;
-}
+import dstats.alloc;
 
 /**Finds median of an input range in O(N) time on average.  In the case of an
  * even number of elements, the mean of the two middle elements is returned.
@@ -112,55 +108,6 @@ if(isRandomAccessRange!(T) &&
     }
 }
 
-unittest {
-    float brainDeadMedian(float[] foo) {
-        qsort(foo);
-        if(foo.length & 1)
-            return foo[$ / 2];
-        return (foo[$ / 2] + foo[$ / 2 - 1]) / 2;
-    }
-
-    float[] test = new float[1000];
-    size_t upperBound, lowerBound;
-    foreach(testNum; 0..1000) {
-        foreach(ref e; test) {
-            e = uniform(0f, 1000f);
-        }
-        do {
-            upperBound = uniform(0u, test.length);
-            lowerBound = uniform(0u, test.length);
-        } while(lowerBound == upperBound);
-        if(lowerBound > upperBound) {
-            swap(lowerBound, upperBound);
-        }
-        auto quickRes = median(test[lowerBound..upperBound]);
-        auto accurateRes = brainDeadMedian(test[lowerBound..upperBound]);
-
-        // Off by some tiny fraction in even N case because of division.
-        // No idea why, but it's too small a rounding error to care about.
-        assert(approxEqual(quickRes, accurateRes));
-    }
-
-    // Make sure everything works with lowest common denominator range type.
-    static struct Count {
-        uint num;
-        uint upTo;
-        @property size_t front() {
-            return num;
-        }
-        void popFront() {
-            num++;
-        }
-        @property bool empty() {
-            return num >= upTo;
-        }
-    }
-
-    Count a;
-    a.upTo = 100;
-    assert(approxEqual(median(a), 49.5));
-}
-
 /**Plain old data holder struct for median, median absolute deviation.
  * Alias this'd to the median absolute deviation member.
  */
@@ -197,91 +144,6 @@ if(doubleInput!(T)) {
     auto ret = medianPartition(devs);
     alloc.freeLast();
     return MedianAbsDev(med, ret);
-}
-
-unittest {
-    assert(approxEqual(medianAbsDev([7,1,8,2,8,1,9,2,8,4,5,9].dup).medianAbsDev, 2.5L));
-    assert(approxEqual(medianAbsDev([8,6,7,5,3,0,999].dup).medianAbsDev, 2.0L));
-}
-
-/**Computes the interquantile range of data at the given quantile value in O(N)
- * time complexity.  For example, using a quantile value of either 0.25 or 0.75
- * will give the interquartile range.  (This is the default since it is
- * apparently the most common interquantile range in common usage.)
- * Using a quantile value of 0.2 or 0.8 will give the interquntile range.
- *
- * If the quantile point falls between two indices, linear interpolation is
- * used.
- *
- * This function is somewhat more efficient than simply finding the upper and
- * lower quantile and subtracting them.
- *
- * Tip:  A quantile of 0 or 1 is handled as a special case and will compute the
- *       plain old range of the data in a single pass.
- */
-double interquantileRange(R)(R data, double quantile = 0.25)
-if(doubleInput!R) {
-    alias quantile q;  // Save typing.
-    dstatsEnforce(q >= 0 && q <= 1,
-        "Quantile must be between 0, 1 for interquantileRange.");
-
-    auto alloc = newRegionAllocator();
-    if(q > 0.5) {
-        q = 1.0 - q;
-    }
-
-    if(q == 0) {  // Special case:  Compute the plain old range.
-        double minElem = double.infinity;
-        double maxElem = -double.infinity;
-
-        foreach(elem; data) {
-            minElem = min(minElem, elem);
-            maxElem = max(maxElem, elem);
-        }
-
-        return maxElem - minElem;
-    }
-
-    // Common case.
-    auto duped = alloc.array(data);
-    immutable double N = duped.length;
-    if(duped.length < 2) {
-        return double.nan;  // Can't do it.
-    }
-
-    immutable lowEnd = to!size_t((N - 1) * q);
-    immutable lowFract = (N - 1) * q - lowEnd;
-
-    partitionK(duped, lowEnd);
-    immutable lowQuantile1 = duped[lowEnd];
-    double minAbove = double.infinity;
-
-    foreach(elem; duped[lowEnd + 1..$]) {
-        minAbove = min(minAbove, elem);
-    }
-
-    immutable lowerQuantile =
-        lowFract * minAbove + (1 - lowFract) * lowQuantile1;
-
-    immutable highEnd = to!size_t((N - 1) * (1.0 - q) - lowEnd);
-    immutable highFract = (N - 1) * (1.0 - q) - lowEnd - highEnd;
-    duped = duped[lowEnd..$];
-    assert(highEnd < duped.length - 1);
-
-    partitionK(duped, highEnd);
-    immutable minAbove2 = reduce!min(double.infinity, duped[highEnd + 1..$]);
-    immutable upperQuantile = minAbove2 * highFract
-                            + duped[highEnd] * (1 - highFract);
-
-    return upperQuantile - lowerQuantile;
-}
-
-unittest {
-    // 0 3 5 6 7 8 9
-    assert(approxEqual(interquantileRange([1,2,3,4,5,6,7,8]), 3.5));
-    assert(approxEqual(interquantileRange([1,2,3,4,5,6,7,8,9]), 4));
-    assert(interquantileRange([1,9,2,4,3,6,8], 0) == 8);
-    assert(approxEqual(interquantileRange([8,6,7,5,3,0,9], 0.2), 4.4));
 }
 
 /**Output range to calculate the mean online.  Getter for mean costs a branch to
@@ -419,83 +281,6 @@ if(doubleIterable!(T)) {
     }
 }
 
-/**Output range to calculate the geometric mean online.
- * Operates similarly to dstats.summary.Mean*/
-struct GeometricMean {
-private:
-    Mean m;
-public:
-    /////Allow implicit casting to double, by returning current geometric mean.
-    alias geoMean this;
-
-    ///
-    void put(double element) pure nothrow @safe {
-        m.put(log2(element));
-    }
-
-    /// Combine two GeometricMean's.
-    void put(typeof(this) rhs) pure nothrow @safe {
-        m.put(rhs.m);
-    }
-
-    const pure nothrow @property {
-        ///
-        double geoMean() {
-            return exp2(m.mean);
-        }
-
-        ///
-        double N() {
-            return m.k;
-        }
-    }
-
-    ///
-    string toString() const {
-        return to!(string)(geoMean);
-    }
-}
-
-/**Calculates the geometric mean of any input range that has elements implicitly
- * convertible to double*/
-double geometricMean(T)(T data)
-if(doubleIterable!(T)) {
-    // This is relatively seldom used and the log function is the bottleneck
-    // anyhow, not worth ILP optimizing.
-    GeometricMean m;
-    foreach(elem; data) {
-        m.put(elem);
-    }
-    return m.geoMean;
-}
-
-unittest {
-    string[] data = ["1", "2", "3", "4", "5"];
-    auto foo = map!(to!(uint))(data);
-
-    auto result = geometricMean(map!(to!(uint))(data));
-    assert(approxEqual(result, 2.60517));
-
-    Mean mean1, mean2, combined;
-    foreach(i; 0..5) {
-      mean1.put(i);
-    }
-
-    foreach(i; 5..10) {
-      mean2.put(i);
-    }
-
-    mean1.put(mean2);
-
-    foreach(i; 0..10) {
-      combined.put(i);
-    }
-
-    assert(approxEqual(combined.mean, mean1.mean),
-        text(combined.mean, "  ", mean1.mean));
-    assert(combined.N == mean1.N);
-}
-
 /**Finds the sum of an input range whose elements implicitly convert to double.
  * User has option of making U a different type than T to prevent overflows
  * on large array summing operations.  However, by default, return type is
@@ -535,42 +320,6 @@ if(doubleIterable!(T)) {
         return sum;
     }
 }
-
-unittest {
-    assert(sum([1,2,3,4,5,6,7,8,9,10][]) == 55);
-    assert(sum(filter!"true"([1,2,3,4,5,6,7,8,9,10][])) == 55);
-    assert(sum(cast(int[]) [1,2,3,4,5])==15);
-    assert(approxEqual( sum(cast(int[]) [40.0, 40.1, 5.2]), 85.3));
-    assert(mean(cast(int[]) [1,2,3]).mean == 2);
-    assert(mean(cast(int[]) [1.0, 2.0, 3.0]).mean == 2.0);
-    assert(mean([1, 2, 5, 10, 17][]).mean == 7);
-    assert(mean([1, 2, 5, 10, 17][]).sum == 35);
-    assert(approxEqual(mean([8,6,7,5,3,0,9,3,6,2,4,3,6][]).mean, 4.769231));
-
-    // Test the OO struct a little, since we're using the new ILP algorithm.
-    Mean m;
-    m.put(1);
-    m.put(2);
-    m.put(5);
-    m.put(10);
-    m.put(17);
-    assert(m.mean == 7);
-
-    foreach(i; 0..100) {
-        // Monte carlo test the unrolled version.
-        auto foo = randArray!rNormal(uniform(5, 100), 0, 1);
-        auto res1 = mean(foo);
-        Mean res2;
-        foreach(elem; foo) {
-            res2.put(elem);
-        }
-
-        foreach(ti, elem; res1.tupleof) {
-            assert(approxEqual(elem, res2.tupleof[ti]));
-        }
-    }
-}
-
 
 /**Output range to compute mean, stdev, variance online.  Getter methods
  * for stdev, var cost a few floating point ops.  Getter for mean costs
@@ -753,266 +502,6 @@ if(doubleIterable!(T)) {
     return meanStdev(data).stdev;
 }
 
-unittest {
-    auto res = meanStdev(cast(int[]) [3, 1, 4, 5]);
-    assert(approxEqual(res.stdev, 1.7078));
-    assert(approxEqual(res.mean, 3.25));
-    res = meanStdev(cast(double[]) [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
-    assert(approxEqual(res.stdev, 2.160247));
-    assert(approxEqual(res.mean, 4));
-    assert(approxEqual(res.sum, 28));
-
-    MeanSD mean1, mean2, combined;
-    foreach(i; 0..5) {
-      mean1.put(i);
-    }
-
-    foreach(i; 5..10) {
-      mean2.put(i);
-    }
-
-    mean1.put(mean2);
-
-    foreach(i; 0..10) {
-      combined.put(i);
-    }
-
-    assert(approxEqual(combined.mean, mean1.mean));
-    assert(approxEqual(combined.stdev, mean1.stdev));
-    assert(combined.N == mean1.N);
-    assert(approxEqual(combined.mean, 4.5));
-    assert(approxEqual(combined.stdev, 3.027650));
-
-    foreach(i; 0..100) {
-        // Monte carlo test the unrolled version.
-        auto foo = randArray!rNormal(uniform(5, 100), 0, 1);
-        auto res1 = meanStdev(foo);
-        MeanSD res2;
-        foreach(elem; foo) {
-            res2.put(elem);
-        }
-
-        foreach(ti, elem; res1.tupleof) {
-            assert(approxEqual(elem, res2.tupleof[ti]));
-        }
-
-        MeanSD resCornerCase;  // Test corner cases where one of the N's is 0.
-        resCornerCase.put(res1);
-        MeanSD dummy;
-        resCornerCase.put(dummy);
-        foreach(ti, elem; res1.tupleof) {
-            assert(elem == resCornerCase.tupleof[ti]);
-        }
-    }
-}
-
-/**Output range to compute mean, stdev, variance, skewness, kurtosis, min, and
- * max online. Using this struct is relatively expensive, so if you just need
- * mean and/or stdev, try MeanSD or Mean. Getter methods for stdev,
- * var cost a few floating point ops.  Getter for mean costs a single branch to
- * check for N == 0.  Getters for skewness and kurtosis cost a whole bunch of
- * floating point ops.  This struct uses O(1) space and does *NOT* store the
- * individual elements.
- *
- * Note:  This struct can implicitly convert to a MeanSD.
- *
- * References: Computing Higher-Order Moments Online.
- * http://people.xiph.org/~tterribe/notes/homs.html
- *
- * Examples:
- * ---
- * Summary summ;
- * summ.put(1);
- * summ.put(2);
- * summ.put(3);
- * summ.put(4);
- * summ.put(5);
- * assert(summ.N == 5);
- * assert(summ.mean == 3);
- * assert(summ.stdev == sqrt(2.5));
- * assert(summ.var == 2.5);
- * assert(approxEqual(summ.kurtosis, -1.9120));
- * assert(summ.min == 1);
- * assert(summ.max == 5);
- * assert(summ.sum == 15);
- * ---*/
-struct Summary {
-private:
-    double _mean = 0;
-    double _m2 = 0;
-    double _m3 = 0;
-    double _m4 = 0;
-    double _k = 0;
-    double _min = double.infinity;
-    double _max = -double.infinity;
-public:
-    ///
-    void put(double element) pure nothrow @safe {
-        immutable kMinus1 = _k;
-        immutable kNeg1 = 1.0 / ++_k;
-        _min = (element < _min) ? element : _min;
-        _max = (element > _max) ? element : _max;
-
-        immutable delta = element - _mean;
-        immutable deltaN = delta * kNeg1;
-        _mean += deltaN;
-
-        _m4 += kMinus1 * deltaN * (_k * _k - 3 * _k + 3) * deltaN * deltaN * delta +
-            6 * _m2 * deltaN * deltaN - 4 * deltaN * _m3;
-        _m3 += kMinus1 * deltaN * (_k - 2) * deltaN * delta - 3 * delta * _m2 * kNeg1;
-        _m2 += kMinus1 * deltaN * delta;
-    }
-
-    /// Combine two Summary's.
-    void put(typeof(this) rhs) pure nothrow @safe {
-        if(_k == 0) {
-            foreach(ti, elem; rhs.tupleof) {
-                this.tupleof[ti] = elem;
-            }
-
-            return;
-        } else if(rhs._k == 0) {
-            return;
-        }
-
-        immutable totalN = _k + rhs._k;
-        immutable delta = rhs._mean - _mean;
-        immutable deltaN = delta / totalN;
-        _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
-
-        _m4 = _m4 + rhs._m4 +
-            deltaN * _k * deltaN * rhs._k * deltaN * delta *
-            (_k * _k - _k * rhs._k + rhs._k * rhs._k) +
-            6 * deltaN * _k * deltaN * _k * rhs._m2 +
-            6 * deltaN * rhs._k * deltaN * rhs._k * _m2 +
-            4 * deltaN * _k * rhs._m3 -
-            4 * deltaN * rhs._k * _m3;
-
-        _m3 = _m3 + rhs._m3 + deltaN * _k * deltaN * rhs._k * (_k - rhs._k) +
-            3 * deltaN * _k * rhs._m2 -
-            3 * deltaN * rhs._k * _m2;
-
-        _m2 = _m2 + rhs._m2 + (_k / totalN * rhs._k * delta * delta);
-
-        _k = totalN;
-        _max = (_max > rhs._max) ? _max : rhs._max;
-        _min = (_min < rhs._min) ? _min : rhs._min;
-    }
-
-    const pure nothrow @property @safe {
-
-        ///
-        double sum() {
-            return _mean * _k;
-        }
-
-        ///
-        double mean() {
-            return (_k == 0) ? double.nan : _mean;
-        }
-
-        ///
-        double stdev() {
-            return sqrt(var);
-        }
-
-        ///
-        double var() {
-            return (_k < 2) ? double.nan : _m2 / (_k - 1);
-        }
-
-        /**
-        Mean squared error.  In other words, a biased estimate of variance.
-        */
-        double mse() {
-            return (_k < 1) ? double.nan : _m2 / _k;
-        }
-
-        ///
-        double skewness() {
-            immutable sqM2 = sqrt(_m2);
-            return _m3 / (sqM2 * sqM2 * sqM2) * sqrt(_k);
-        }
-
-        ///
-        double kurtosis() {
-            return _m4 / _m2 * _k  / _m2 - 3;
-        }
-
-        ///
-        double N() {
-            return _k;
-        }
-
-        ///
-        double min() {
-            return _min;
-        }
-
-        ///
-        double max() {
-            return _max;
-        }
-
-        /**Converts this struct to a MeanSD.  Called via alias this when an
-         * implicit conversion is attetmpted.
-         */
-        MeanSD toMeanSD() {
-            return MeanSD(_mean, _m2, _k);
-        }
-    }
-
-    alias toMeanSD this;
-
-    ///
-    string toString() const {
-        return text("N = ", roundTo!long(_k),
-                  "\nMean = ", mean,
-                  "\nVariance = ", var,
-                  "\nStdev = ", stdev,
-                  "\nSkewness = ", skewness,
-                  "\nKurtosis = ", kurtosis,
-                  "\nMin = ", _min,
-                  "\nMax = ", _max);
-    }
-}
-
-unittest {
-    // Everything else is tested indirectly through kurtosis, skewness.  Test
-    // put(typeof(this)).
-
-    Summary mean1, mean2, combined;
-    foreach(i; 0..5) {
-      mean1.put(i);
-    }
-
-    foreach(i; 5..10) {
-      mean2.put(i);
-    }
-
-    auto m1_2 = mean1;
-    auto m2_2 = mean2;
-    m1_2.put(m2_2);
-
-    mean1.put(mean2);
-
-    foreach(i; 0..10) {
-      combined.put(i);
-    }
-
-    foreach(ti, elem; mean1.tupleof) {
-        assert(approxEqual(elem, combined.tupleof[ti]));
-    }
-
-    Summary summCornerCase;  // Case where one N is zero.
-    summCornerCase.put(mean1);
-    Summary dummy;
-    summCornerCase.put(dummy);
-    foreach(ti, elem; summCornerCase.tupleof) {
-        assert(elem == mean1.tupleof[ti]);
-    }
-}
-
 /**Excess kurtosis relative to normal distribution.  High kurtosis means that
  * the variance is due to infrequent, large deviations from the mean.  Low
  * kurtosis means that the variance is due to frequent, small deviations from
@@ -1027,13 +516,6 @@ if(doubleIterable!(T)) {
         kCalc.put(elem);
     }
     return kCalc.kurtosis;
-}
-
-unittest {
-    // Values from Matlab.
-    assert(approxEqual(kurtosis([1, 1, 1, 1, 10].dup), 0.25));
-    assert(approxEqual(kurtosis([2.5, 3.5, 4.5, 5.5].dup), -1.36));
-    assert(approxEqual(kurtosis([1,2,2,2,2,2,100].dup), 2.1657));
 }
 
 /**Skewness is a measure of symmetry of a distribution.  Positive skewness
@@ -1052,155 +534,201 @@ if(doubleIterable!(T)) {
     return sCalc.skewness;
 }
 
-unittest {
-    // Values from Octave.
-    assert(approxEqual(skewness([1,2,3,4,5].dup), 0));
-    assert(approxEqual(skewness([3,1,4,1,5,9,2,6,5].dup), 0.5443));
-    assert(approxEqual(skewness([2,7,1,8,2,8,1,8,2,8,4,5,9].dup), -0.0866));
 
-    // Test handling of ranges that are not arrays.
-    string[] stringy = ["3", "1", "4", "1", "5", "9", "2", "6", "5"];
-    auto intified = map!(to!(int))(stringy);
-    assert(approxEqual(skewness(intified), 0.5443));
+/* This is all that was needed from dstats.sort. */
+
+
+/* Returns the index, NOT the value, of the median of the first, middle, last
+ * elements of data.*/
+size_t medianOf3(alias compFun, T)(T[] data) {
+    alias binaryFun!(compFun) comp;
+    immutable size_t mid = data.length / 2;
+    immutable uint result = ((cast(uint) (comp(data[0], data[mid]))) << 2) |
+                            ((cast(uint) (comp(data[0], data[$ - 1]))) << 1) |
+                            (cast(uint) (comp(data[mid], data[$ - 1])));
+
+    assert(result != 2 && result != 5 && result < 8); // Cases 2, 5 can't happen.
+    switch(result) {
+        case 1:  // 001
+        case 6:  // 110
+            return data.length - 1;
+        case 3:  // 011
+        case 4:  // 100
+            return 0;
+        case 0:  // 000
+        case 7:  // 111
+            return mid;
+        default:
+            assert(0);
+    }
+    assert(0);
 }
 
-/**Convenience function.  Puts all elements of data into a Summary struct,
- * and returns this struct.*/
-Summary summary(T)(T data)
-if(doubleIterable!(T)) {
-    // This is too infrequently used and has too much ILP within a single
-    // iteration to be worth ILP optimizing.
-    Summary summ;
-    foreach(elem; data) {
-        summ.put(elem);
-    }
-    return summ;
-}
-// Just a convenience function for a well-tested struct.  No unittest really
-// necessary.  (Famous last words.)
-
-///
-struct ZScore(T) if(isForwardRange!(T) && is(ElementType!(T) : double)) {
-private:
-    T range;
-    double mean;
-    double sdNeg1;
-
-    double z(double elem) {
-        return (elem - mean) * sdNeg1;
-    }
-
-public:
-    this(T range) {
-        this.range = range;
-        auto msd = meanStdev(range);
-        this.mean = msd.mean;
-        this.sdNeg1 = 1.0 / msd.stdev;
-    }
-
-    this(T range, double mean, double sd) {
-        this.range = range;
-        this.mean = mean;
-        this.sdNeg1 = 1.0 / sd;
-    }
-
-    ///
-    @property double front() {
-        return z(range.front);
-    }
-
-    ///
-    void popFront() {
-        range.popFront;
-    }
-
-    ///
-    @property bool empty() {
-        return range.empty;
-    }
-
-    static if(isForwardRange!(T)) {
-        ///
-        @property typeof(this) save() {
-            auto ret = this;
-            ret.range = range.save;
-            return ret;
-        }
-    }
-
-    static if(isRandomAccessRange!(T)) {
-        ///
-        double opIndex(size_t index) {
-            return z(range[index]);
-        }
-    }
-
-    static if(isBidirectionalRange!(T)) {
-        ///
-        @property double back() {
-            return z(range.back);
-        }
-
-        ///
-        void popBack() {
-            range.popBack;
-        }
-    }
-
-    static if(hasLength!(T)) {
-        ///
-        @property size_t length() {
-            return range.length;
-        }
-    }
-}
-
-/**Returns a range with whatever properties T has (forward range, random
- * access range, bidirectional range, hasLength, etc.),
- * of the z-scores of the underlying
- * range.  A z-score of an element in a range is defined as
- * (element - mean(range)) / stdev(range).
+/**Partitions the input data according to compFun, such that position k contains
+ * the kth largest/smallest element according to compFun.  For all elements e
+ * with indices < k, !compFun(data[k], e) is guaranteed to be true.  For all
+ * elements e with indices > k, !compFun(e, data[k]) is guaranteed to be true.
+ * For example, if compFun is "a < b", all elements with indices < k will be
+ * <= data[k], and all elements with indices larger than k will be >= k.
+ * Reorders any additional input arrays in lockstep.
  *
- * Notes:
+ * Examples:
+ * ---
+ * auto foo = [3, 1, 5, 4, 2].dup;
+ * auto secondSmallest = partitionK(foo, 1);
+ * assert(secondSmallest == 2);
+ * foreach(elem; foo[0..1]) {
+ *     assert(elem <= foo[1]);
+ * }
+ * foreach(elem; foo[2..$]) {
+ *     assert(elem >= foo[1]);
+ * }
+ * ---
  *
- * If the data contained in the range is a sample of a larger population,
- * rather than an entire population, then technically, the results output
- * from the ZScore range are T statistics, not Z statistics.  This is because
- * the sample mean and standard deviation are only estimates of the population
- * parameters.  This does not affect the mechanics of using this range,
- * but it does affect the interpretation of its output.
- *
- * Accessing elements of this range is fairly expensive, as a
- * floating point multiply is involved.  Also, constructing this range is
- * costly, as the entire input range has to be iterated over to find the
- * mean and standard deviation.
+ * Returns:  The kth element of the array.
  */
-ZScore!(T) zScore(T)(T range)
-if(isForwardRange!(T) && doubleInput!(T)) {
-    return ZScore!(T)(range);
+ElementType!(T[0]) partitionK(alias compFun = "a < b", T...)(T data, ptrdiff_t k)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        assert(array.length == len);
+    }
+} do {
+    // Don't use the float-to-int trick because it's actually slower here
+    // because the main part of the algorithm is O(N), not O(N log N).
+    return partitionKImpl!compFun(data, k);
 }
 
-/**Allows the construction of a ZScore range with precomputed mean and
- * stdev.
- */
-ZScore!(T) zScore(T)(T range, double mean, double sd)
-if(isForwardRange!(T) && doubleInput!(T)) {
-    return ZScore!(T)(range, mean, sd);
-}
+/*private*/ ElementType!(T[0]) partitionKImpl(alias compFun, T...)(T data, ptrdiff_t k) {
+    alias binaryFun!(compFun) comp;
 
-unittest {
-    int[] arr = [1,2,3,4,5];
-    auto m = mean(arr).mean;
-    auto sd = stdev(arr);
-    auto z = zScore(arr);
-
-    size_t pos = 0;
-    foreach(elem; z) {
-        assert(approxEqual(elem, (arr[pos++] - m) / sd));
+    {
+        immutable size_t med3 = medianOf3!(comp)(data[0]);
+        foreach(array; data) {
+            auto temp = array[med3];
+            array[med3] = array[$ - 1];
+            array[$ - 1] = temp;
+        }
     }
 
-    assert(z.length == 5);
-    foreach(i; 0..z.length) {
-        assert(approxEqual(z[i], (arr[i] - m) / sd));
+    ptrdiff_t lessI = -1, greaterI = data[0].length - 1;
+    auto pivot = data[0][$ - 1];
+    while(true) {
+        while(comp(data[0][++lessI], pivot)) {}
+        while(greaterI > 0 && comp(pivot, data[0][--greaterI])) {}
+
+        if(lessI < greaterI) {
+            foreach(array; data) {
+                auto temp = array[lessI];
+                array[lessI] = array[greaterI];
+                array[greaterI] = temp;
+            }
+        } else break;
+    }
+    foreach(array; data) {
+        auto temp = array[lessI];
+        array[lessI] = array[$ - 1];
+        array[$ - 1] = temp;
+    }
+
+    if((greaterI < k && lessI >= k) || lessI == k) {
+        return data[0][k];
+    } else if(lessI < k) {
+        foreach(ti, array; data) {
+            data[ti] = array[lessI + 1..$];
+        }
+        return partitionK!(compFun, T)(data, k - lessI - 1);
+    } else {
+        foreach(ti, array; data) {
+            data[ti] = array[0..min(greaterI + 1, lessI)];
+        }
+        return partitionK!(compFun, T)(data, k);
     }
 }
+
+
+/* This is all that was needed from dstats.base */
+
+
+// Returns the number of dimensions in an array T.
+package template nDims(T)
+{
+    static if(isArray!T)
+    {
+        enum nDims = 1 + nDims!(typeof(T.init[0]));
+    }
+    else
+    {
+        enum nDims = 0;
+    }
+}
+
+/**
+Tests whether T is an input range whose elements can be implicitly
+converted to doubles.*/
+template doubleInput(T) {
+    enum doubleInput = isInputRange!(T) && is(ElementType!(T) : double);
+}
+
+/**Tests whether T is iterable and has elements of a type implicitly
+ * convertible to double.*/
+template doubleIterable(T) {
+    static if(!isIterable!T) {
+        enum doubleIterable = false;
+    } else {
+        enum doubleIterable = is(ForeachType!(T) : double);
+    }
+}
+
+// Used for ILP optimizations.
+template StaticIota(size_t upTo) {
+    static if(upTo == 0) {
+        alias TypeTuple!() StaticIota;
+    } else {
+        alias TypeTuple!(StaticIota!(upTo - 1), upTo - 1) StaticIota;
+    }
+}
+
+// Uses Gauss-Jordan elim. w/ row pivoting to invert from.  Stores the results
+// in to and leaves from in an undefined state.
+void invert(double[][] from, double[][] to) {
+		// Normalize.
+		foreach(i, row; from) {
+				double absMax = 1.0 / reduce!(max)(map!(abs)(row[0..from.length]));
+				row[] *= absMax;
+				to[i][] = 0;
+				to[i][i] = absMax;
+		}
+
+		foreach(col; 0..from.length) {
+				size_t bestRow;
+				double biggest = 0;
+				foreach(row; col..from.length) {
+						if(abs(from[row][col]) > biggest) {
+								bestRow = row;
+								biggest = abs(from[row][col]);
+						}
+				}
+
+				swap(from[col], from[bestRow]);
+				swap(to[col], to[bestRow]);
+				immutable pivotFactor = from[col][col];
+
+				foreach(row; 0..from.length) if(row != col) {
+						immutable ratio = from[row][col] / pivotFactor;
+
+						// If you're ever looking to optimize this code, good luck.  The
+						// bottleneck is almost ENTIRELY this one line:
+						from[row][] -= from[col][] * ratio;
+						to[row][] -= to[col][] * ratio;
+				}
+		}
+
+		foreach(i; 0..from.length) {
+				immutable diagVal = from[i][i];
+				from[i][] /= diagVal;
+				to[i][] /= diagVal;
+		}
+}
+
