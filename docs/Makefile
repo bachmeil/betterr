@@ -30,3 +30,4 @@ doc:
 	pandoc -s efficiency.md -o efficiency.html --template=template.html --toc
 	pandoc -s scaling.md -o scaling.html --template=template.html --toc
 	pandoc -s improve.md -o improve.html --template=template.html
+	pandoc -s numerical.md -o numerical.html --template=template.html
