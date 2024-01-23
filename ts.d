@@ -129,14 +129,20 @@ struct TS(int freq) {
     //~ end = start+data.x.length;
   //~ }
   
-  this(T)(T v, long[] s) if (__traits(hasMember, v, "data") && 
+  /* Anything with an RData member */
+  this(T)(T v, long[] s) 
+  if (__traits(hasMember, v, "data") && 
 	(is(typeof(__traits(getMember, v, "data")) == RData))) {
     data = RData("ts(" ~ v.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
       ~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
     ptr = REAL(data.x);
     frequency = this.frequency;
     _start = s;
-    _end = fromLong(this.start!long + data.x.length - 1);
+    static if(freq == 1) {
+			_end == this.start + data.x.length - 1;
+		} else {
+			_end = fromLong(this.start!long + data.x.length - 1);
+		}
   }
   
   static if(freq == 1) {
@@ -184,17 +190,17 @@ struct TS(int freq) {
     return TS!freq("lag(" ~ this.name ~ ", " ~ to!string(-k) ~ ")");
   }
   
-  //~ TS lead(long k) {
-    //~ return lag(-k);
-  //~ }
+  TS lead(long k) {
+    return lag(-k);
+  }
   
-  //~ TS diff(long k) {
-    //~ return TS("diff(" ~ this.name ~ ", " ~ k.to!string ~ ")");
-  //~ }
+  TS diff(long k) {
+    return TS("diff(" ~ this.name ~ ", " ~ k.to!string ~ ")");
+  }
   
-  //~ TS pct(long k) {
-    //~ return TS("(diff(" ~ this.name ~ ", " ~ k.to!string ~ ")/lag(" ~ this.name ~ ", " ~ to!string(-k) ~ "))");
-  //~ }
+  TS pctChange(long k) {
+    return TS("(diff(" ~ this.name ~ ", " ~ k.to!string ~ ")/lag(" ~ this.name ~ ", " ~ to!string(-k) ~ "))");
+  }
   
   void print(string msg="") {
     if (msg.length > 0) {
@@ -213,6 +219,34 @@ struct TS(int freq) {
   }
 }
 
+struct TimePeriod {
+	long year;
+	long minor;
+	long frequency;
+	
+	TimePeriod opBinary(string op: "+")(int k) {
+		enforce(k >= 0, "Can only add a positive number to a TimePeriod");
+		TimePeriod result;
+		long tmp = (minor-1) + k;
+		result.year = this.year + (tmp / frequency);
+		result.minor = (tmp % frequency) + 1;
+		result.frequency = frequency;
+		return result;
+	}
+	
+	TimePeriod opBinary(string op: "-")(int k) {
+		enforce(k >= 0, "Can only subtract a positive number from a TimePeriod");
+		TimePeriod result;
+		result.year = this.year - k/frequency;
+		result.minor = this.minor - k % frequency;
+		if (result.minor < 1) {
+			result.minor += frequency;
+			result.year -= 1;
+		}
+		result.frequency = this.frequency;
+		return result;
+	}
+}
 
 struct MTS {
 	RData data;
