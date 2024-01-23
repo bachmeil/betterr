@@ -20,7 +20,9 @@ void main(string[] args) {
 	}
 	writeln(executeShell(`mkdir -p ` ~ args[1] ~ `/dstats`).output);
 	copy("dstats/summary.d", args[1] ~ "/dstats/summary.d");
-	std.file.write(args[1] ~ "/Makefile", "LINK=-L" ~ rinsideLocation ~ "/lib/libRInside.so -L-lR\n\napp:\n\tldmd2 -i file.d $(LINK)\n");
+	if (!exists(args[1] ~ "/Makefile")) {
+		std.file.write(args[1] ~ "/Makefile", "LINK=-L" ~ rinsideLocation ~ "/lib/libRInside.so -L-lR\n\napp:\n\tldmd2 -i file.d $(LINK)\n");
+	}
 }
 
 string[] sourceFiles() {

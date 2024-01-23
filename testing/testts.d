@@ -5,7 +5,7 @@ import std.stdio;
 void main() {
   startR();
   
-  auto ts = TS(rnorm(120), [1990, 4], 12);
+  auto ts = TS!(12)(rnorm(120), [1990, 4]);
   writeln(ts.frequency);
   writeln(ts.fromLong(ts.start));
   
@@ -21,6 +21,9 @@ void main() {
   writeln(ts2[[1995,3]..[1998,1]]);
   writeln(ts2.until([1995, 3]));
   writeln(ts2.starting([1995, 3]));
+  
+  MTS multiple = tsCombine([ts, ts2]);
+  multiple.print("Combining ts and ts2");
   
   closeR();
 }
