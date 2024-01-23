@@ -29,57 +29,61 @@ struct TS(int freq) {
 			_end = e;
 		}
 	} else {
-		private long[] _start;
-		private long[] _end;
+		private TimePeriod _start;
+		private TimePeriod _end;
 		long[] start() {
-			return _start;
+			return _start.array;
 		}
 		long[] end() {
-			return _end;
+			return _end.array;
 		}
 		void start(long[] s) {
-			_start = s;
+			_start.year = s[0];
+			_start.minor = s[1];
 		}
 		void end(long[] e) {
-			_end = e;
+			_end.year = e[0];
+			_end.minor = e[1];
 		}
-		long start(T: long)() {
-			return frequency*(_start[0] - 1900) + (_start[1]-1);
+		// Shouldn't normally use these, but they're here if you want them
+		long longStart() {
+			return _start.to!long;
 		}
-		long end(T: long)() {
-			return frequency*(_start[0] - 1900) + (_start[1]-1);
+		long longEnd() {
+			return _end.to!long;
 		}
 	}
 
-  long asLong(long[] d) {
-    if (frequency != 1) {
-      return (d[0]-1900)*frequency+(d[1]-1);
-    } else {
-      return d[0];
-    }
-  }
+  //~ long asLong(long[] d) {
+    //~ if (frequency != 1) {
+      //~ return (d[0]-1900)*frequency+(d[1]-1);
+    //~ } else {
+      //~ return d[0];
+    //~ }
+  //~ }
   
-  long[] fromLong(long d) {
-    return [(d/frequency)+1900, d%frequency+1];
-  }
+  //~ long[] fromLong(long d) {
+    //~ return [(d/frequency)+1900, d%frequency+1];
+  //~ }
   
-  long asLong(long[] d, long f) {
-    if (f != 1) {
-      return (d[0]-1900)*f+(d[1]-1);
-    } else {
-      return d[0];
-    }
-  }
+  //~ long asLong(long[] d, long f) {
+    //~ if (f != 1) {
+      //~ return (d[0]-1900)*f+(d[1]-1);
+    //~ } else {
+      //~ return d[0];
+    //~ }
+  //~ }
   
-  long[] fromLong(long d, long f) {
-    return [(d/f)+1900, d%f+1];
-  }
+  //~ long[] fromLong(long d, long f) {
+    //~ return [(d/f)+1900, d%f+1];
+  //~ }
   
   /* To access an existing ts object that's already inside R */
   this(string code) {
     data = RData(code);
     ptr = REAL(data.x);
-    frequency = freq;
+    _start = TimePeriod(freq);
+    _end = TimePeriod(freq);
     auto tmpStart = IntVector("as.integer(start(" ~ data.name ~ "))");
     auto tmpEnd = IntVector("as.integer(end(" ~ data.name ~ "))");
     static if(freq == 1) {
@@ -91,24 +95,38 @@ struct TS(int freq) {
 		}
   }
   
-  /* For an annual ts */
-  //~ this(string code, long _start) {
-    //~ data = RData("ts(" ~ code ~ ", start=" ~ _start.to!string ~ ", frequency=1)");
-    //~ ptr = REAL(data.x);
-    //~ frequency = 1;
-    //~ start = this.start;
-    //~ end = this.start+data.x.length;
-  //~ }
+  static if(freq == 1) {
+		this(string code, long s) {
+			data = RData("ts(" ~ code ~ ", start=" ~ _start.to!string ~ ")");
+			ptr = REAL(data.x);
+			_start = s;
+			_end = s + data.x.length-1;
+		}
+	} else {
+		this(string code, long[] s) {
+			data = RData("ts(" ~ code ~ ", start=c(" ~ s[0].to!string ~ ", " 
+				~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
+			ptr = REAL(data.x);
+			_start = TimePeriod(freq);
+			_end = TimePeriod(freq);
+			_start = s;
+			_end = _start + (data.x.length-1);
+		}
 
-  /* Monthly or quarterly */
-  //~ this(string code, long[2] _start) {
-    //~ data = RData("ts(" ~ code ~ ", start=c(" ~ _start[0].to!string ~ ", " 
-      //~ ~ _start[1].to!string ~ "), frequency=" ~ _frequency.to!string ~ ")");
-    //~ ptr = REAL(data.x);
-    //~ frequency = _frequency;
-    //~ start = asLong(_start);
-    //~ end = start+data.x.length;
-  //~ }
+		/* Anything with an RData member */
+		this(T)(T v, long[] s) 
+		if (__traits(hasMember, v, "data") && 
+		(is(typeof(__traits(getMember, v, "data")) == RData))) {
+			//~ data = RData("ts(" ~ v.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
+				//~ ~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
+			//~ ptr = REAL(data.x);
+			//~ _start = TimePeriod(freq);
+			//~ _end = TimePeriod(freq);
+			//~ _start = s;
+			//~ _end = _start + (data.x.length-1);
+			this(v.name, s);
+		}
+	}
 
   /* Slicing is done using dates rather than observations, which wouldn't
    * really make a lot of sense. */
@@ -129,21 +147,6 @@ struct TS(int freq) {
     //~ end = start+data.x.length;
   //~ }
   
-  /* Anything with an RData member */
-  this(T)(T v, long[] s) 
-  if (__traits(hasMember, v, "data") && 
-	(is(typeof(__traits(getMember, v, "data")) == RData))) {
-    data = RData("ts(" ~ v.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
-      ~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
-    ptr = REAL(data.x);
-    frequency = this.frequency;
-    _start = s;
-    static if(freq == 1) {
-			_end == this.start + data.x.length - 1;
-		} else {
-			_end = fromLong(this.start!long + data.x.length - 1);
-		}
-  }
   
   static if(freq == 1) {
 		double opIndex(long d) {
@@ -224,6 +227,16 @@ struct TimePeriod {
 	long minor;
 	long frequency;
 	
+	this(long f) {
+		frequency = f;
+	}
+	
+	this(long y, long m, long f) {
+		year = y;
+		minor = m;
+		frequency = f;
+	}
+	
 	TimePeriod opBinary(string op: "+")(int k) {
 		enforce(k >= 0, "Can only add a positive number to a TimePeriod");
 		TimePeriod result;
@@ -245,6 +258,29 @@ struct TimePeriod {
 		}
 		result.frequency = this.frequency;
 		return result;
+	}
+	
+	long[] array() {
+		return [year, minor];
+	}
+
+	long opCast(T: long)() {
+		return (frequency*year - 1900) + (minor-1);
+	}
+	
+	void opAssign(long[] d) {
+		year = d[0];
+		minor = d[1];
+	}
+	
+	void opAssign(int[] d) {
+		year = d[0];
+		minor = d[1];
+	}
+	
+	void opAssign(long d) {
+		year = (d/frequency) + 1900;
+		minor = (d%frequency) + 1;
 	}
 }
 
