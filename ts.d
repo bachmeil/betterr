@@ -129,7 +129,8 @@ struct TS(int freq) {
     //~ end = start+data.x.length;
   //~ }
   
-  this(Vector v, long[] s) {
+  this(T)(T v, long[] s) if (__traits(hasMember, v, "data") && 
+	(is(typeof(__traits(getMember, v, "data")) == RData))) {
     data = RData("ts(" ~ v.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
       ~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
     ptr = REAL(data.x);
