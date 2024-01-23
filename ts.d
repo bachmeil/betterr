@@ -102,6 +102,12 @@ struct TS(int freq) {
 			_start = s;
 			_end = s + data.x.length-1;
 		}
+    
+		this(T)(T v, long s) 
+		if (__traits(hasMember, v, "data") && 
+		(is(typeof(__traits(getMember, v, "data")) == RData))) {
+			this(v.name, s);
+		}
 	} else {
 		this(string code, long[] s) {
 			data = RData("ts(" ~ code ~ ", start=c(" ~ s[0].to!string ~ ", " 
@@ -113,7 +119,7 @@ struct TS(int freq) {
 			_end = _start + (data.x.length-1);
 		}
 
-		/* Anything with an RData member */
+		/* Anything with an RData member named data */
 		this(T)(T v, long[] s) 
 		if (__traits(hasMember, v, "data") && 
 		(is(typeof(__traits(getMember, v, "data")) == RData))) {
@@ -147,47 +153,71 @@ struct TS(int freq) {
     //~ end = start+data.x.length;
   //~ }
   
+  bool notBefore(long[] x, TimePeriod y) {
+    if (x[0] > y.year) {
+      return true;
+    } else if ((x[0] == y.year) && (x[1] > y.minor)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  bool notAfter(long[] x, TimePeriod y) {
+    if (x[0] < y.year) {
+      return true;
+    } else if ((x[0] == y.year) && (x[1] < y.minor)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
   
   static if(freq == 1) {
 		double opIndex(long d) {
 			return ptr[d - this._start];
 		}
-	}
-  
-  //~ double opIndex(long d0, long d1) {
-    //~ enforce(frequency > 1, "Indexing with two values requires monthly or quarterly data");
-    //~ return ptr[asLong([d0, d1]) - start];
-  //~ }
-  
-  //~ /* Since it's a date, the end point is included */
-  //~ TS opSlice(long s, long e) {
-    //~ return TS("window(" ~ this.name ~ ", start=" ~ s.to!string ~ ", end=" ~ e.to!string ~ ")");
-  //~ }
-  
-  //~ TS opSlice(long[] s, long[] e) {
-    //~ enforce(frequency > 1, "Do not use an array to denote the year for annual data");
-    //~ return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
-      //~ ~ s[1].to!string ~ "), end=c(" ~ e[0].to!string ~ ", " 
-      //~ ~ e[1].to!string ~ "))");
-  //~ }
-  
-  //~ TS until(long e) {
-    //~ return TS("window(" ~ this.name ~ ", end=" ~ e.to!string ~ ")");
-  //~ }
 
-  //~ TS until(long[2] e) {
-    //~ return TS("window(" ~ this.name ~ ", end=c(" ~ e[0].to!string ~ ", " 
-      //~ ~ e[1].to!string ~ "))");
-  //~ }
+    /* Since it's a date, the end point is included */
+    TS opSlice(long s, long e) {
+      return TS("window(" ~ this.name ~ ", start=" ~ s.to!string ~ ", end=" ~ e.to!string ~ ")");
+    }
+
+    TS until(long e) {
+      return TS("window(" ~ this.name ~ ", end=" ~ e.to!string ~ ")");
+    }
+
+    TS starting(long s) {
+      return TS("window(" ~ this.name ~ ", start=" ~ s.to!string ~ ")");
+    }
+	} else {
+    double opIndex(long y, long m) {
+      enforce(notBefore([y, m], this.start), "Index precedes the start of the TS");
+      enforce(notAfter([y, m], this.end), "Index is after the end of the TS");
+      return ptr[ [y, m] - this.start ];
+    }
+    
+    /* Since it's a date, the end point is included */
+    TS opSlice(long[] s, long[] e) {
+      return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
+        ~ s[1].to!string ~ "), end=c(" ~ e[0].to!string ~ ", " 
+        ~ e[1].to!string ~ "))");
+    }
+
+    TS until(long[] e) {
+      return TS("window(" ~ this.name ~ ", end=c(" ~ e[0].to!string ~ ", " 
+        ~ e[1].to!string ~ "))");
+    }
+    
+    TS starting(long[] s) {
+      return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
+        ~ s[1].to!string ~ "))");
+    }
+  }
   
-  //~ TS starting(long s) {
-    //~ return TS("window(" ~ this.name ~ ", start=" ~ s.to!string ~ ")");
-  //~ }
   
-  //~ TS starting(long[2] s) {
-    //~ return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
-      //~ ~ s[1].to!string ~ "))");
-  //~ }
+  
+
   
   TS lag(long k) {
     return TS!freq("lag(" ~ this.name ~ ", " ~ to!string(-k) ~ ")");
@@ -237,7 +267,7 @@ struct TimePeriod {
 		frequency = f;
 	}
 	
-	TimePeriod opBinary(string op: "+")(int k) {
+	TimePeriod opBinary(string op: "+")(long k) {
 		enforce(k >= 0, "Can only add a positive number to a TimePeriod");
 		TimePeriod result;
 		long tmp = (minor-1) + k;
@@ -247,7 +277,7 @@ struct TimePeriod {
 		return result;
 	}
 	
-	TimePeriod opBinary(string op: "-")(int k) {
+	TimePeriod opBinary(string op: "-")(long k) {
 		enforce(k >= 0, "Can only subtract a positive number from a TimePeriod");
 		TimePeriod result;
 		result.year = this.year - k/frequency;
@@ -260,12 +290,20 @@ struct TimePeriod {
 		return result;
 	}
 	
+  long asLong(long[] d) {
+    return frequency*(d[0]-1900) + (d[1]-1);
+  }
+
+  long opBinaryRight(string op: "-")(long[] d) {
+    long tmp = asLong(d) - asLong([year, minor]);
+  }
+  
 	long[] array() {
 		return [year, minor];
 	}
 
 	long opCast(T: long)() {
-		return (frequency*year - 1900) + (minor-1);
+		return frequency*(year - 1900) + (minor-1);
 	}
 	
 	void opAssign(long[] d) {
