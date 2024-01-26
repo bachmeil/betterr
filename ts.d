@@ -3,6 +3,7 @@ import betterr.rdata;
 import betterr.r;
 import betterr.matrix, betterr.vector;
 import std.conv, std.exception, std.range, std.stdio;
+import std.algorithm.comparison: max, min;
 
 struct TS(int freq) {
   /* The value of _start and _end depend on the frequency. I don't know
@@ -27,6 +28,12 @@ struct TS(int freq) {
 		}
 		void end(long e) {
 			_end = e;
+		}
+		long longStart() {
+			return _start;
+		}
+		long longEnd() {
+			return _end;
 		}
 	} else {
 		private TimePeriod _start;
@@ -262,6 +269,10 @@ struct TS(int freq) {
     return TS("(diff(" ~ this.name ~ ", " ~ k.to!string ~ ")/lag(" ~ this.name ~ ", " ~ to!string(-k) ~ "))");
   }
   
+  double[] array() {
+		return ptr[0..(_end-_start+1)];
+	}
+  
   void print(string msg="") {
     if (msg.length > 0) {
       writeln("--------\n", msg, "\n--------");
@@ -317,6 +328,10 @@ struct TimePeriod {
 		return result;
 	}
 	
+	long opBinary(string op: "-")(TimePeriod j) {
+		return this.to!long - j.to!long;
+	}
+	
   long asLong(long[] d) {
     return frequency*(d[0]-1900) + (d[1]-1);
   }
@@ -353,7 +368,7 @@ struct MTS {
 	RData data;
   long start;
   long end;
-  int frequency;
+  long frequency;
   double * ptr;
   alias data this;
   
@@ -368,6 +383,16 @@ struct MTS {
     tmp = IntVector("as.integer(end(" ~ data.name ~ "))");
     end = asLong([tmp[0], tmp[1]], frequency);
   }  
+  
+  this(long ncol, long s, long e) {
+		writeln("e: ", e);
+		writeln("s: ", s);
+		string code = "ts(matrix(0.0, nrow=" ~ to!string(e-s+1) ~ ", ncol=" ~ to!string(ncol) ~ "), start=" ~ to!string(s) ~ ")";
+		data = RData(code);
+		ptr = REAL(data.x);
+		start = s;
+		end = s;
+	}
   
   long asLong(long[2] d) {
     if (frequency != 1) {
@@ -411,7 +436,7 @@ struct MTS {
 }
 	
 
-MTS tsCombine(int f)(TS!f[] series) {
+MTS tsCombine(long f)(TS!f[] series) {
 	enforce(series.length > 1, "tsCombine requires multiple time series");
 	MTS result;
 	evalRQ(`..tmp <- ` ~ series[0].data.name);
@@ -423,13 +448,66 @@ MTS tsCombine(int f)(TS!f[] series) {
 	return MTS(`..tmp`);
 }
 		
+struct MTSTransform {
+	/* This struct will be used to hold info on transformations to make
+	 * to the elements of a MTS struct. The purpose is mainly efficiency,
+	 * because you need only to specify the dataset, and then one matrix
+	 * is allocated, and it's filled one time, using the information about
+	 * the transformation. */
+	 TSTransform[] data;
+	 long start;
+	 long end;
+	 long nrow;
+	 
+	 MTS create() {
+		 start = long.min;
+		 end = long.max;
+		 foreach(var; data) {
+			 start = max(start, var.modStart());
+			 end = min(end, var.modEnd());
+		 }
+		 auto result = MTS(data.length, start, end);
+		 nrow = end - start + 1;
+		 foreach(ii, var; data) {
+			 auto tmp = result.ptr[ii*nrow..(ii+1)*nrow];
+			 var.compute(tmp, start, end);
+		 }
+		 return result;
+	 }
+}
 
+struct TSTransform {
+	void delegate(ref double[], long, long) compute;
+	long delegate() modStart;
+	long delegate() modEnd;
+}
 
-
-
-
-
-
+TSTransform Lag(long f)(TS!f var, long k=1) {
+	double[] source = var.array;
+	long arrayStart = var.longStart;
+	long arrayEnd = var.longEnd;
+	
+	/* Guaranteed all elements from s to e can be computed */
+	void compute(ref double[] target, long s, long e) {
+		/* s-k is the date of the lag of the first observation after
+		 * transformation.
+		 * Then we subtract arrayStart to get the index inside source.
+		 * Do the same through e+1 (since e+1 is not included). */
+		target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
+	}
+	
+	/* First non-missing observation available for the transformed series */
+	long modStart() {
+		return arrayStart+k;
+	}
+	
+	/* Last non-missing observation available for the transformed series */
+	long modEnd() {
+		return arrayEnd+k;
+	}
+	
+	return TSTransform(&compute, &modStart, &modEnd);
+}
 
 
 

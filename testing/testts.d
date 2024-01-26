@@ -21,6 +21,11 @@ void main() {
   writeln(tp + 58);
   writeln(tp + 61);
   writeln(tp + 62);
+  
+  MTSTransform tr;
+  tr.data = [Lag(ts, 1), Lag(ts, 2)];
+  auto newts = tr.create();
+	newts.data.print("newts");
   //~ writeln(tp + (-1));
   //~ ts.lag(3).print("Third lag");
   //~ ts.lead(1).print("First lead");
