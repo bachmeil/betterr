@@ -153,10 +153,32 @@ struct TS(int freq) {
     //~ end = start+data.x.length;
   //~ }
   
-  bool notBefore(long[] x, TimePeriod y) {
-    if (x[0] > y.year) {
+  bool notBefore(long[] x, long[] y) {
+    if (x[0] > y[0]) {
       return true;
-    } else if ((x[0] == y.year) && (x[1] > y.minor)) {
+    } else if ((x[0] == y[0]) && (x[1] >= y[1])) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  bool notBefore(long[] x, TimePeriod y) {
+    return notBefore(x, y.array);
+  }
+  
+  bool notBefore(TimePeriod x, long[] y) {
+    return notBefore(x.array, y);
+  }
+  
+  bool notBefore(TimePeriod x, TimePeriod y) {
+    return notBefore(x.array, y.array);
+  }
+  
+  bool notAfter(long[] x, long[] y) {
+    if (x[0] < y[0]) {
+      return true;
+    } else if ((x[0] == y[0]) && (x[1] <= y[1])) {
       return true;
     } else {
       return false;
@@ -164,13 +186,15 @@ struct TS(int freq) {
   }
   
   bool notAfter(long[] x, TimePeriod y) {
-    if (x[0] < y.year) {
-      return true;
-    } else if ((x[0] == y.year) && (x[1] < y.minor)) {
-      return true;
-    } else {
-      return false;
-    }
+    return notAfter(x, y.array);
+  }
+  
+  bool notAfter(TimePeriod x, long[] y) {
+    return notAfter(x.array, y);
+  }
+  
+  bool notAfter(TimePeriod x, TimePeriod y) {
+    return notAfter(x.array, y.array);
   }
   
   static if(freq == 1) {
@@ -191,33 +215,36 @@ struct TS(int freq) {
       return TS("window(" ~ this.name ~ ", start=" ~ s.to!string ~ ")");
     }
 	} else {
+    /* If you want a single date returned as a TS, use the slice operator
+     * with the same value for start and end. */
     double opIndex(long y, long m) {
       enforce(notBefore([y, m], this.start), "Index precedes the start of the TS");
       enforce(notAfter([y, m], this.end), "Index is after the end of the TS");
-      return ptr[ [y, m] - this.start ];
+      return ptr[ [y, m] - this._start ];
     }
     
     /* Since it's a date, the end point is included */
     TS opSlice(long[] s, long[] e) {
+      enforce(notAfter(s, e), "Start date cannot be after the end date");
+      enforce(notBefore(s, this.start), "Start date prior to start of series");
+      enforce(notAfter(e, this.end), "End date after start of series");
       return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
         ~ s[1].to!string ~ "), end=c(" ~ e[0].to!string ~ ", " 
         ~ e[1].to!string ~ "))");
     }
 
     TS until(long[] e) {
-      return TS("window(" ~ this.name ~ ", end=c(" ~ e[0].to!string ~ ", " 
-        ~ e[1].to!string ~ "))");
+      return opSlice(this.start, e);
+      //~ return TS("window(" ~ this.name ~ ", end=c(" ~ e[0].to!string ~ ", " 
+        //~ ~ e[1].to!string ~ "))");
     }
     
     TS starting(long[] s) {
-      return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
-        ~ s[1].to!string ~ "))");
+      return opSlice(s, this.end);
+      //~ return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
+        //~ ~ s[1].to!string ~ "))");
     }
   }
-  
-  
-  
-
   
   TS lag(long k) {
     return TS!freq("lag(" ~ this.name ~ ", " ~ to!string(-k) ~ ")");
@@ -295,7 +322,7 @@ struct TimePeriod {
   }
 
   long opBinaryRight(string op: "-")(long[] d) {
-    long tmp = asLong(d) - asLong([year, minor]);
+    return asLong(d) - asLong([year, minor]);
   }
   
 	long[] array() {
