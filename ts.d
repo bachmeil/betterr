@@ -1,8 +1,10 @@
+/* Warning: This is still experimental. There may be large breaking
+ * changes. */
 module betterr.array;
 import betterr.rdata;
 import betterr.r;
 import betterr.matrix, betterr.vector;
-import std.conv, std.exception, std.range, std.stdio;
+import std.conv, std.exception, std.math, std.range, std.stdio;
 import std.algorithm.comparison: max, min;
 
 struct TS(int freq) {
@@ -436,7 +438,7 @@ struct MTS {
 }
 	
 
-MTS tsCombine(long f)(TS!f[] series) {
+MTS combine(long f)(TS!f[] series) {
 	enforce(series.length > 1, "tsCombine requires multiple time series");
 	MTS result;
 	evalRQ(`..tmp <- ` ~ series[0].data.name);
@@ -463,8 +465,8 @@ struct MTSTransform {
 		 start = long.min;
 		 end = long.max;
 		 foreach(var; data) {
-			 start = max(start, var.modStart());
-			 end = min(end, var.modEnd());
+			 start = max(start, var.modStart);
+			 end = min(end, var.modEnd);
 		 }
 		 auto result = MTS(data.length, start, end);
 		 nrow = end - start + 1;
@@ -478,8 +480,10 @@ struct MTSTransform {
 
 struct TSTransform {
 	void delegate(ref double[], long, long) compute;
-	long delegate() modStart;
-	long delegate() modEnd;
+	/* First non-missing observation available for the transformed series */
+	long modStart;
+	/* Last non-missing observation available for the transformed series */
+	long modEnd;
 }
 
 TSTransform Lag(long f)(TS!f var, long k=1) {
@@ -496,21 +500,106 @@ TSTransform Lag(long f)(TS!f var, long k=1) {
 		target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
 	}
 	
-	/* First non-missing observation available for the transformed series */
-	long modStart() {
-		return arrayStart+k;
-	}
-	
-	/* Last non-missing observation available for the transformed series */
-	long modEnd() {
-		return arrayEnd+k;
-	}
-	
-	return TSTransform(&compute, &modStart, &modEnd);
+	return TSTransform(&compute, arrayStart+k, arrayEnd+k);
 }
 
+// Last is included
+TSTransform[] Lags(long f)(TS!f var, long from, long to) {
+	TSTransform[] result;
+	foreach(k; from..(to+1)) {
+		result ~= Lag(var, k);
+	}
+	return result;
+}
 
+TSTransform[] Lags(long f)(TS!f var, long[] lags) {
+	TSTransform[] result;
+	foreach(k; lags) {
+		result ~= Lag(var, k);
+	}
+	return result;
+}
 
+TSTransform Lead(long f)(TS!f var, long k=1) {
+	return Lag(var, -k);
+}
 
+TSTransform Diff(long f)(TS!f var, long k=1) {
+	double[] source = var.array;
+	long arrayStart = var.longStart;
+	long arrayEnd = var.longEnd;
+	
+	/* Guaranteed all elements from s to e can be computed */
+	void compute(ref double[] target, long s, long e) {
+		foreach(d; s..(e+1)) {
+			target[d-s] = source[d-arrayStart] - source[d-arrayStart-k];
+		}
+	}
+	
+	return TSTransform(&compute, arrayStart+k, arrayEnd);
+}
 
+TSTransform PctChange(long f)(TS!f var, long k=1) {
+	double[] source = var.array;
+	long arrayStart = var.longStart;
+	long arrayEnd = var.longEnd;
+	
+	/* Guaranteed all elements from s to e can be computed */
+	void compute(ref double[] target, long s, long e) {
+		foreach(d; s..(e+1)) {
+			target[d-s] = (source[d-arrayStart] - source[d-arrayStart-k])/source[d-arrayStart-k];
+		}
+	}
+	
+	return TSTransform(&compute, arrayStart+k, arrayEnd);
+}
 
+TSTransform LogDiff(long f)(TS!f var, long k=1) {
+	double[] source = var.array;
+	long arrayStart = var.longStart;
+	long arrayEnd = var.longEnd;
+	
+	/* Guaranteed all elements from s to e can be computed */
+	void compute(ref double[] target, long s, long e) {
+		foreach(d; s..(e+1)) {
+			target[d-s] = log(source[d-arrayStart]) - log(source[d-arrayStart-k]);
+		}
+	}
+	
+	return TSTransform(&compute, arrayStart+k, arrayEnd);
+}
+
+TSTransform vectorFunction(alias fn, long f)(TS!f var) {
+	double[] source = var.array;
+	
+	/* Guaranteed all elements from s to e can be computed */
+	void compute(ref double[] target, long s, long e) {
+		foreach(d; s..(e+1)) {
+			target[d-s] = fn(source[d-var.longStart]);
+		}
+	}
+	
+	return TSTransform(&compute, var.longStart, var.longEnd);
+}
+
+TSTransform Log(long f)(TS!f var) {
+	return vectorFunction!std.math.log(var);
+}
+
+TSTransform Trend(long k=1) {
+	void compute(ref double[] target, long s, long e) {
+		foreach(ii; 1..(target.length+1)) {
+			target[ii] = ii^^k;
+		}
+	}
+	
+	return TSTransform(&compute, long.min, long.max);
+}
+
+TSTransform[] PolyTrend(long k=1) {
+	TSTransform[] result;
+	foreach(ii; 1..(k+1)) {
+		result ~= Trend(ii);
+	}
+	return result;
+}
