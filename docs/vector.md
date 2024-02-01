@@ -8,13 +8,58 @@ RData data;
 double * ptr;
 ```
 
+You can use assignment and slicing as in languages like R and Matlab. Keep in mind that
+slices do not include the last element. Here's an example:
+
+```
+// Create a new vector with space for five elements
+auto x = Vector(5);
+
+// Set all five elements to 1.7
+x = 1.7;
+
+// Print x with a message preceding it
+x.print("Test vector");
+
+// You can also use the empty slice operator to set all elements to the same scalar
+x[] = -6.2;
+x.print("Should be -6.2");
+
+// You can use the empty slice operator to copy in the elements of a double[]
+// There is a check that the lengths match
+x[] = [1.1, 2.2, 3.3, 4.4, 5.5];
+x.print("Should be increasing values");
+
+// You can set a subset of the vector to the same scalar
+x[2..5] = -1.2;
+x.print("Last three elements should be -1.2");
+
+// You can also set a subset of the vector to the elements of a double[]
+// There's a check that the lengths match
+x[2..5] = [-0.2, -0.3, -0.4];
+x.print("Last three elements changed");
+```
+
 # Functionality
 
 ## Construction
 
 ### this(string code)
 
+You can pass a string of R code and store the result as a Vector.
+
+```
+auto x = Vector(rnorm(10));
+```
+
 ### this(long r)
+
+You can send the number of elements and a Vector with that many elements will be allocated.
+The elements are initialized to zero.
+
+```
+auto x = Vector(12)
+```
   
 ### void initialize(long r)
 
@@ -26,17 +71,38 @@ been constructed, since the bounds checking will fail.
 
 Makes a copy in R, but forces the allocation of a new Vector.
 
+```
+auto y3 = Vector(x);
+```
+
 ### this(RData rd)
   
 Makes a copy in R, but forces the allocation of a new Vector.
 
 ### this(double[] v)
 
+Allocates a new Vector and copies the elements of v into it.
+
+```
+auto x = Vector([1.1, 2.2, 3.3]);
+```
+
 ### this(long[] v)
 
 ### this(int[] v)
 
 ## Indexing
+
+```
+// Indexing
+v[1]
+
+// Grab the first, third, and fifth elements
+v[[0, 2, 4]]
+
+// Set elements
+v[1] = 3.3;
+```
 
 ### double opIndex(long r)
 
@@ -73,6 +139,18 @@ allocate the vector and copy the elements of `v` into it.
 ### Vector opSlice()
 
 `this[]` returns a new Vector with all elements of `this`.
+
+### void opSliceAssign(double a)
+
+This does the same thing as opAssign.
+
+### void opSliceAssign(double[] v)
+
+This does the same thing as opAssign.
+
+### void opSliceAssign(double a, long ind0, long ind1) 
+
+### void opSliceAssign(double[] v, long ind0, long ind1)
 
 ## Range support
 

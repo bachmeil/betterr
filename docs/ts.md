@@ -1,5 +1,7 @@
 # TS
 
+**Warning:** This module is still considered experimental. The documentation in this file may be inaccurate and incomplete.
+
 This struct is for holding a single time series. It's a vector, but it also stores metadata on the frequency and the dates covered.
 
 # Construction
@@ -147,6 +149,84 @@ Prints the series and metadata to the screen, optionally preceded by the message
 ```
 x.print("Monthly copper prices from January 1990 to March 2023");
 ```
+
+# Transforming TS Objects
+
+There are basic facilities for taking transformations of a TS struct
+(lag, lead, difference, etc.) If you have a few series of a few thousand
+observations, you can take the easy route and bind TS objects together
+to get an MTS object. That may end up being too slow for a simulation
+or bootstrap where you're combining many time series into an MTS struct.
+
+To provide for greater efficiency, you can define a function that returns
+a TSTransform struct:
+
+```
+struct TSTransform {
+	void delegate(ref double[], long, long) compute;
+	/* First non-missing observation available for the transformed series */
+	long modStart;
+	/* Last non-missing observation available for the transformed series */
+	long modEnd;
+}
+```
+
+modStart and modEnd are straightforward; you just calculate how the
+start and end dates of the series change with the transformation.
+
+The compute delegate is a little more complicated. You have to create
+this delegate and return it in the TSTransform struct. The first argument
+is a `double[]` that points to a column of the mts object allocated by
+R that will be storing the data. The second is the date of the first
+observation to do the transformation, and the third is the date of the
+last observation to do the transformation.
+
+It may be more clear looking at how this is implemented for a lag
+transformation. The user specifies the order of the lag (1, 2, or
+whatever). The construction function looks like this:
+
+```
+TSTransform Lag(long f)(TS!f var, long k=1) {
+	double[] source = var.array;
+	long arrayStart = var.longStart;
+	long arrayEnd = var.longEnd;
+	
+	void compute(ref double[] target, long s, long e) {
+		target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
+	}
+	
+	return TSTransform(&compute, arrayStart+k, arrayEnd+k);
+}
+```
+
+The user passes a TS struct of arbitrary frequency and the lag order, k.
+There are three pieces of data stored in the delegate `compute`. The
+underlying data array of the TS is stored in source. The start and end
+dates of the TS are stored in arrayStart and arrayEnd, respectively.
+
+The compute function does the computation of the kth lag of TS var from
+time s to time e. In this case, it fills target with the appropriate
+elements from source.
+
+The MTSTransform struct holds all of the transformations that will be in
+the dataset after storing all of the transformed data series.
+
+As an example, suppose you have a TS named `x`, and you want an MTS
+holding the first and second lags of `x`. You do that with these three
+lines of code:
+
+```
+MTSTransform transform;
+transform.data = [Lag(x, 1), Lag(x, 2)];
+MTS newts = transform.create();
+```
+
+This is a simple and efficient approach for combining many transformed
+time series into one MTS struct when you can use the built-in
+transformations. It's general enough that you can do *any* transformation.
+For instance, you can create a construction function that takes a group
+of TS series and creates a new series that is the difference between
+two of them. You can access arbitrary data from inside the delegate.
 
 
 

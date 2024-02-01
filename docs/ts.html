@@ -8,6 +8,7 @@
   <style type="text/css">code{white-space: pre;}</style>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+<style>html{margin-top: -60px;}</style>
 
 </head>
 <body>
@@ -40,9 +41,11 @@
 <li><a href="#ts-pctlong-k">TS pct(long k)</a></li>
 <li><a href="#void-printstring-msg">void print(string msg="")</a></li>
 </ul></li>
+<li><a href="#transforming-ts-objects">Transforming TS Objects</a></li>
 </ul>
 </div>
 <h1 id="ts">TS</h1>
+<p><strong>Warning:</strong> This module is still considered experimental. The documentation in this file may be inaccurate and incomplete.</p>
 <p>This struct is for holding a single time series. It’s a vector, but it also stores metadata on the frequency and the dates covered.</p>
 <h1 id="construction">Construction</h1>
 <h2 id="thisstring-code">this(string code)</h2>
@@ -101,6 +104,38 @@ auto x = TS(v, [2013, 1]);</code></pre>
 <h2 id="void-printstring-msg">void print(string msg="")</h2>
 <p>Prints the series and metadata to the screen, optionally preceded by the message msg.</p>
 <pre><code>x.print(&quot;Monthly copper prices from January 1990 to March 2023&quot;);</code></pre>
+<h1 id="transforming-ts-objects">Transforming TS Objects</h1>
+<p>There are basic facilities for taking transformations of a TS struct (lag, lead, difference, etc.) If you have a few series of a few thousand observations, you can take the easy route and bind TS objects together to get an MTS object. That may end up being too slow for a simulation or bootstrap where you’re combining many time series into an MTS struct.</p>
+<p>To provide for greater efficiency, you can define a function that returns a TSTransform struct:</p>
+<pre><code>struct TSTransform {
+    void delegate(ref double[], long, long) compute;
+    /* First non-missing observation available for the transformed series */
+    long modStart;
+    /* Last non-missing observation available for the transformed series */
+    long modEnd;
+}</code></pre>
+<p>modStart and modEnd are straightforward; you just calculate how the start and end dates of the series change with the transformation.</p>
+<p>The compute delegate is a little more complicated. You have to create this delegate and return it in the TSTransform struct. The first argument is a <code>double[]</code> that points to a column of the mts object allocated by R that will be storing the data. The second is the date of the first observation to do the transformation, and the third is the date of the last observation to do the transformation.</p>
+<p>It may be more clear looking at how this is implemented for a lag transformation. The user specifies the order of the lag (1, 2, or whatever). The construction function looks like this:</p>
+<pre><code>TSTransform Lag(long f)(TS!f var, long k=1) {
+    double[] source = var.array;
+    long arrayStart = var.longStart;
+    long arrayEnd = var.longEnd;
+    
+    void compute(ref double[] target, long s, long e) {
+        target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
+    }
+    
+    return TSTransform(&amp;compute, arrayStart+k, arrayEnd+k);
+}</code></pre>
+<p>The user passes a TS struct of arbitrary frequency and the lag order, k. There are three pieces of data stored in the delegate <code>compute</code>. The underlying data array of the TS is stored in source. The start and end dates of the TS are stored in arrayStart and arrayEnd, respectively.</p>
+<p>The compute function does the computation of the kth lag of TS var from time s to time e. In this case, it fills target with the appropriate elements from source.</p>
+<p>The MTSTransform struct holds all of the transformations that will be in the dataset after storing all of the transformed data series.</p>
+<p>As an example, suppose you have a TS named <code>x</code>, and you want an MTS holding the first and second lags of <code>x</code>. You do that with these three lines of code:</p>
+<pre><code>MTSTransform transform;
+transform.data = [Lag(x, 1), Lag(x, 2)];
+MTS newts = transform.create();</code></pre>
+<p>This is a simple and efficient approach for combining many transformed time series into one MTS struct when you can use the built-in transformations. It’s general enough that you can do <em>any</em> transformation. For instance, you can create a construction function that takes a group of TS series and creates a new series that is the difference between two of them. You can access arbitrary data from inside the delegate.</p>
 
 <br>
 <a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>

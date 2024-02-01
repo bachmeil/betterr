@@ -8,6 +8,12 @@ Feel free to use it, but things might break. There's no intention of turning thi
 
 # Recent changes
 
+Jan 20, 2024: Mir was a very large dependency that was most of the size of the project. Even after stripping out the Mir modules that weren't needed, it was still 2.7 MB of D source files. That might not seem like a lot, but my standard usage involves copying all of the dependency files into the project directory and compiling with `ldmd -i`. Beyond the obvious convenience and stability benefits, copying the dependencies into the project facilitates reproducibility, which is critical for academic research.
+
+Adding more than 3 MB of files before you've done anything was too much for me. The Mir functions weren't even playing a big role. There were a few functions in baser.d that called into Mir to provide fast versions of mean, median, and a couple other things. Those few functions were responsible for more than 90% of the size of betterr. dstats and Phobos provided equivalent functionality. After stripping dstats down as much as possible, the dependency was a single 20.5k file. Rather than MB, the total size of the dependency is now about 200k. Mir will be removed completely from this repo in the future. You can add Mir manually to your project if you wish.
+
+A source of friction was the manual setup I had been using. I added an installation script. I run `rdmd install.d dirname` to install betterr and create a Makefile in directory dirname.
+
 Dec 20, 2023: I've started adding Windows support. In terms of functionality, there's only basic stuff, which you can see by looking at testwin.d and rwin.d. I originally tried to call the dll files directly, which I thought would make things easy for me, but in the end concluded it was to complicated and fragile for anyone else to use. So I went the route manually loading functions from the DLL files. Getting it to work (or, more accurately, learning what I'm doing) was the hard part. Adding the remaining functionality is straightforward. From the perspective of the user of betterr, there's not much intervention or overhead, since you don't have to mess around with linking. I don't have a timetable for completing Windows support since I don't use Windows.
 
 Nov 15, 2023: I'm doing some work outside the project that will be merged in when (if) it gets completed. Time is always scarce during fall semester.

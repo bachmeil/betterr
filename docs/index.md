@@ -146,6 +146,7 @@ extern(C) {
 - [R lazy copying](lazycopy.html)
 - [Understanding argument lists in the R source](arglists.html)
 - [Passing function pointers around](funcptr.html)
+- [Options for numerical programming in D](numerical.html)
 
 # Thoughts
 

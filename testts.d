@@ -21,11 +21,8 @@ void main() {
   writeln(tp + 58);
   writeln(tp + 61);
   writeln(tp + 62);
-  
-  MTSTransform tr;
-  tr.data = [Lag(ts, 1), Lag(ts, 2)];
-  auto newts = tr.create();
-	newts.data.print("newts");
+  ts[[1994,1]..[1994,12]].print("All of 1994");
+  ts[[1994,1]..[1994,12]].lag(2).print("All of 1994, twice lagged");
   //~ writeln(tp + (-1));
   //~ ts.lag(3).print("Third lag");
   //~ ts.lead(1).print("First lead");
