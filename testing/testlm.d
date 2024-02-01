@@ -7,9 +7,11 @@ void main() {
   auto df = DataFile("macrodata.csv");
   df.commentChar = "#";
   auto dataset = df.read();
-  LMConfig model;
-  model.lhs = "employment";
-  model.rhs = ["ffr", "inflation", "unrate"];
+  LMConfig model = {
+    rhs: ["ffr", "inflation", "unrate"], 
+    lhs: "employment",
+    intercept: true
+  };
   auto fit = lm(dataset, model);
   fit.print("Regression output");
   fit.summary.print("Summary of regression output");
@@ -19,13 +21,18 @@ void main() {
 	 * heavily use the elements. Calling model.beta() requires a call to
 	 * R and the creation of a new struct. Extreme inefficiency, but no
 	 * big deal for a quick use like here. */
-	fit.coefficients.print("Coefficients and other information");
 	writeln(fit.dfResidual);
-	fit.model.print("Model Matrix");
+	//~ fit.model.print("Model Matrix");
 	writeln(fit.sigma);
 	writeln(fit.rsq);
 	writeln(fit.adjrsq);
 	writeln(fit.fstat);
 	fit.unscaledCov.print("Unscaled covariance matrix");
+  fit.nwCov.print("Newey-West covariance matrix");
+  fit.nwStdErrors.print("Newey-West standard errors");
+	fit.coefficients.print("Coefficients and other information");
+  fit.nwCoefficients.print("Newey-West adjustment");
+  fit.whiteCoefficients.print("White adjustment");
+  fit.whiteCov.print("White covariance matrix");
   closeR();
 }

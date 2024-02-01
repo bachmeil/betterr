@@ -167,8 +167,8 @@ struct LMFit {
 		return Vector(fit["coefficients"]);
 	}
 	
-	List coefficients() {
-		return List(summary.name ~ "['coefficients']");
+	Matrix coefficients() {
+		return Matrix(summary.name ~ "[['coefficients']]");
 	}
 	
 	Vector residuals() {
@@ -206,6 +206,36 @@ struct LMFit {
 	List unscaledCov() {
 		return List(summary.name ~ "['cov.unscaled']");
 	}
+  
+  Matrix nwCov() {
+    return Matrix("sandwich::NeweyWest(" ~ fit.name ~ ")");
+  }
+  
+  Vector nwStdErrors() {
+    return Vector("sqrt(diag(sandwich::NeweyWest(" ~ fit.name ~ ")))");
+  }
+  
+  Matrix nwCoefficients() {
+    evalRQ([
+      `tmp <- ` ~ summary.name ~ `[["coefficients"]]`,
+      `tmp[,2] <- sqrt(diag(sandwich::NeweyWest(` ~ fit.name ~ `)))`,
+      `tmp[,3] <- tmp[,1]/tmp[,2]`,
+      `tmp2 <- tmp[,-4]`]);
+    return Matrix("tmp2");
+  }
+  
+  Matrix whiteCov() {
+    return Matrix("sandwich::vcovHC(" ~ fit.name ~ ")");
+  }
+  
+  Matrix whiteCoefficients() {
+    evalRQ([
+      `tmp <- ` ~ summary.name ~ `[["coefficients"]]`,
+      `tmp[,2] <- sqrt(diag(sandwich::vcovHC(` ~ fit.name ~ `)))`,
+      `tmp[,3] <- tmp[,1]/tmp[,2]`,
+      `tmp2 <- tmp[,-4]`]);
+    return Matrix("tmp2");
+  }
 }
 
 extern(C) {
