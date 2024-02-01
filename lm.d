@@ -2,7 +2,7 @@ module betterr.lm;
 
 import std.array, std.conv, std.exception, std.stdio;
 import betterr.r;
-import betterr.dataframe, betterr.list, betterr.rdata, betterr.vector;
+import betterr.dataframe, betterr.list, betterr.matrix, betterr.rdata, betterr.vector;
 
 /* This is a configuration. Additional options will be added in the
  * future. The data is not stored in here. 
@@ -206,4 +206,50 @@ struct LMFit {
 	List unscaledCov() {
 		return List(summary.name ~ "['cov.unscaled']");
 	}
+}
+
+extern(C) {
+	void dqrls_(double *x, int *n, int *p, double *y, int *ny,
+		     double *tol, double *b, double *rsd, double *qty, int *k, 
+		     int *jpvt, double *qraux, double *work);
+}
+
+struct RegOutput {
+	double[] coef;
+	double[] residuals;
+	double[] effects;
+	int rank;
+}
+
+/* This is the FORTRAN function that R uses for OLS, and we can call
+ * it directly without creating R objects.
+ * 
+ * Note that x is overwritten, so we make a copy. If you don't care
+ * about that (as might be the case in a simulation) and you want max 
+ * performance, comment out the creation of xreg and send x.ptr
+ * to dqrls_ instead.
+ * 
+ * In a simulation setting, you can avoid new allocations by 
+ * allocating coef, residuals, effects, pivot, qraux, and work once
+ * and then sending their pointers as an argument to the function. */
+RegOutput dqrls(Vector y, Matrix x, double tol=1e-07) {
+	RegOutput result;
+	int n = x.rows.to!int;
+	int p = x.cols.to!int;
+	int ny = 1;
+	result.coef = new double[p];
+	result.residuals = new double[n];
+	result.effects = new double[n];
+	double[] xreg;
+	xreg.reserve(n*p);
+	foreach(val; x.ptr[0..n*p]) {
+		xreg ~= val;
+	}
+	auto pivot = new int[p];
+	auto qraux = new double[p];
+	auto work = new double[2*p];
+	dqrls_(xreg.ptr, &n, &p, y.ptr, &ny, &tol, result.coef.ptr,
+		result.residuals.ptr, result.effects.ptr, &(result.rank),
+		pivot.ptr, qraux.ptr, work.ptr);
+	return result;
 }
