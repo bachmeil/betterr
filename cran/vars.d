@@ -59,10 +59,10 @@ struct VAREst {
 		auto tmp = Rf_protect(evalR(output.name ~ "$restrictions"));
 		if (Rf_isNull(tmp)) {
 			Rf_unprotect(1);
-			return null;
+			return MaybeMatrix(null);
 		} else {
 			Rf_unprotect(1);
-			return Matrix(output.name ~ "$restrictions");
+			return MaybeMatrix(Matrix(output.name ~ "$restrictions"));
 		}
 	}	
 }
