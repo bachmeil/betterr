@@ -71,6 +71,7 @@ alias MaybeMatrix = SumType!(null, Matrix);
 
 struct VAREquations {
 	LMFit[] equations;
+	alias this equations;
 	
 	this(List varfit) {
 		auto tmp = Rf_protect(varfit.name ~ "$varresult");
