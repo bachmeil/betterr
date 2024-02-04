@@ -684,6 +684,71 @@ version(mir) {
 	Vector quantile(Vector v, Vector p) {
 		return Vector(`quantile(` ~ v.name ~ `, probs = ` ~ p.name ~ `)`);
 	}
+	
+	/* x will be partially sorted so dup if you don't want that */
+	double fastQuantile(double * x, long k, double p) {
+		import std.algorithm.sorting: partialSort;
+		double quantileIndex = (k-1).to!double*p;
+		long upper = ceiling(quantileIndex);
+		x[0..k].partialSort(upper);
+		return fastestQuantile(x, k, p);
+	}
+	
+	double fastQuantile(double[] x, double p) {
+		return fastQuantile(x.ptr, x.length, p);
+	}
+	
+	double[] fastQuantile(double * x, long k, double[] ps) {
+		double[] result;
+		foreach(p; ps) {
+			result ~= fastQuantile(x, k, p);
+		}
+		return result;
+	}
+	
+	double[] fastQuantile(double[] x, double[] ps) {
+		double[] result;
+		foreach(p; ps) {
+			result ~= fastQuantile(x, p);
+		}
+		return result;
+	}
+	
+	/* Assumes x is sorted in increasing order */
+	double fastestQuantile(double * x, long k, double p) {
+		double quantileIndex = (k-1).to!double*p;
+		long lower = floor(quantileIndex);
+		long upper = lower+1;
+		if (lower == k) {
+			return x[k-1];
+		} else if (upper == 0) {
+			return x[0];
+		} else {
+			double weightCeiling = quantileIndex - floor(i);
+			double weightFloor = 1-weightCeiling;
+			return weightFloor*x[lower] + weightCeiling*x[upper];
+		}
+	}
+	
+	double fastestQuantile(double[] x, double p) {
+		return fastestQuantile(x.ptr, x.length, p);
+	}
+	
+	double[] fastestQuantile(double[] x, double[] ps) {
+		double[] result;
+		foreach(p; ps) {
+			result ~= fastestQuantile(x, p);
+		}
+		return result;
+	}
+	
+	double[] fastestQuantile(double * x, long k, double[] ps) {
+		double[] result;
+		foreach(p; ps) {
+			result ~= fastestQuantile(x, k, p);
+		}
+		return result;
+	}
 }
 
 string boolString(bool x) {
