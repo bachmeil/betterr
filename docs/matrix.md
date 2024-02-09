@@ -80,7 +80,7 @@ auto m6 = m5.dup;
 
 ### Overview
 
-Multidimensional slicing allows the use of standard matrix notation.
+Multidimensional slicing allows the use of standard matrix notation. Do keep in mind that D indexing starts at 0, while R indexing starts at 1.
 
 ```
 m[1,4]
@@ -89,7 +89,7 @@ m[1..3, 4..8]
 m[3, 0..$] // $ has the usual meaning; takes all elements of row 3
 ```
 
-There is also a special struct type used to take all elements of a row or column:
+For convenience and readability, there is a special struct type that denotes all elements of a row or column:
 
 ```
 m[3, _all] // All elements of the third row
@@ -97,37 +97,57 @@ m[_all, 3] // All elements of the third column
 m[_all, _all] // The entire matrix
 ```
 
-Finally, you might want to pull out a block with non-consecutive rows or columns. It is the same as R:
+You can pull out a block with non-consecutive rows and/or columns similar to the way it's done in R:
 
 ```
 m[3, [1, 4, 9]] // Column 1, 4, and 9 of row 3
 ```
 
-The above has the R equivalent `m[4, c(2, 5, 10)]`.
+The R equivalent is `m[4, c(2, 5, 10)]`.
 
 ### Operations that avoid allocating a new Matrix
 
-Accessing a single element returns a double:
+Excessive allocation of new Matrix structs will quickly degrade performance. You are assured of not allocating a new matrix if you accessing a single element like this:
 
 ```
 double x = m[4,7];
 ```
 
-Note that R is not involved in this operation. The above is equivalent to something like this:
+In fact, that code works directly with the pointer to the underlying data array, so R is not involved in the operation at all. The above is equivalent to something like this:
 
 ```
 double x = m.ptr[39];
 ```
 
-Any operations on a Submatrix avoid allocating a new matrix (see the next section for details). That is done by calling `reference`:
+As long as you assign to elements directly with D, there will never be a new allocation, and you will get C-levels of performance. This code:
 
 ```
+x[0, 1..4] = [1.1, 2.2, 3.3];
+```
+
+is the equivalent of something like
+
+```
+x.ptr[9..12] = [1.1, 2.2, 3.3];
+```
+
+R is not involved and there is a guarantee that there will not be a new allocation. You can use a Submatrix to create a reference to a Matrix. Operations on a Submatrix do not call into R and do not allocate a new Matrix. A Submatrix is created by calling `reference` or `sub`:
+
+```
+// These are equivalent
 Submatrix sm = m.reference();
+auto sm = m.sub;
 ```
 
-### Operations that allocate a new matrix
+### Performance considerations
 
-Anything that returns more than a single element will allocate a new Matrix. In other words, this returns a new (2 x 2) matrix:
+This library is designed to facilitate quickly writing code that is correct and reasonably performant by default. Computationally intensive programs that make heavy use of matrix operations may require additional effort to get reasonable performance. Here are a few tips to keep in mind.
+
+First, avoid allocation where possible. Reuse allocated Matrix and Vector memory as much as possible. There's nothing specific to this library about this recommendation; this is the most basic optimization for any computationally-intensive program written in any language. You might be tempted to go further and do your own array allocations. That probably won't be a good use of your time unless you have a faster memory allocator than the one used by R, which seems unlikely.
+
+Second, most of the time the default operations for matrix multiplication, solution of equations, and so on will be fast. That's because the underlying calculations are done by C and Fortran libraries such as BLAS. You won't gain much by rewriting your code to use BLAS for matrix multiplication since that's already being done. Where that strategy will work is when you allocate Matrix structs at the start of a loop and then reuse them. You can write your own calls to BLAS's `dgemm` to do the matrix multiplication. Beyond this type of optimization, though, you're most likely wasting your time.
+
+Third, anything that goes through R and returns more than a single element might allocate a new Matrix. As an example, this slicing operation returns a new (2 x 2) matrix:
 
 ```
 m[0..2, 0..2];
@@ -139,19 +159,13 @@ Suppose you're doing this operation:
 m1 = m[0..2, 0..2];
 ```
 
-The right side will allocate a new Matrix, the elements of that block of `m` will be copied into the new matrix, and then those elements will be copied into `m1`. Since the right side will never be used again, the new matrix will be destroyed. There is no easy solution to this. In this example
+The right side allocates a new Matrix, the elements of that block of `m` will be copied into that new Matrix, and then those elements will be copied into `m1`. Since the right side will never be used again, the new Matrix will be destroyed. There is no easy solution to this. In this example
 
 ```
 auto m2 = m[0..2, 0..2];
 ```
 
-you want the right side to return a new Matrix. In principle, that could be solved by instead writing
-
-```
-Matrix m2 = m[0..2, 0..2];
-```
-
-but then we'd have to ban the use of `auto`. The solution I have adopted is to create a Submatrix, which is a reference to the underlying Matrix.
+you want the right side to return a new Matrix. You can be explicit that you don't want to allocate a new Matrix by using a Submatrix, which is a reference to the underlying Matrix.
 
 ```
 auto sm = m.reference;
@@ -161,6 +175,8 @@ m2[0..2, 0..2] = sm[0..2, 0..2];
 // New Matrix; calls the Matrix constructor
 Matrix m3 = sm[0..2, 0..2]; 
 ```
+
+In general, if you want the best performance, you should be creating Submatrix structs all over and working with them. Why this is not the default behavior is explained in the next section.
 
 ### Shouldn't slicing return a reference?
 
@@ -403,7 +419,7 @@ Used to fill all the elements of a block of a matrix safely, filling by column. 
 
 ## IntMatrix
 
-Holds a matrx of int values.
+Holds a matrix of int values.
 
 ## BoolMatrix
 
