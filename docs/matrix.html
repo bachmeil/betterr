@@ -36,6 +36,7 @@
 <li><a href="#overview">Overview</a></li>
 <li><a href="#operations-that-avoid-allocating-a-new-matrix">Operations that avoid allocating a new Matrix</a></li>
 <li><a href="#operations-that-allocate-a-new-matrix">Operations that allocate a new matrix</a></li>
+<li><a href="#shouldnt-slicing-return-a-reference">Shouldn’t slicing return a reference?</a></li>
 </ul></li>
 <li><a href="#other-functions">Other Functions</a>
 <ul>
@@ -54,18 +55,18 @@
 <li><a href="#matrix-plusmatrix-x-matrix-y">Matrix plus(Matrix x, Matrix y)</a></li>
 <li><a href="#matrix-minusmatrix-x-matrix-y">Matrix minus(Matrix x, Matrix y)</a></li>
 <li><a href="#matrix-divmatrix-x-matrix-y">Matrix div(Matrix x, Matrix y)</a></li>
-<li><a href="#matrix-mulmatrix-x-double-y">Matrix mul(Matrix x, double y)</a></li>
-<li><a href="#matrix-plusmatrix-x-double-y">Matrix plus(Matrix x, double y)</a></li>
-<li><a href="#matrix-minusmatrix-x-double-y">Matrix minus(Matrix x, double y)</a></li>
-<li><a href="#matrix-divmatrix-x-double-y">Matrix div(Matrix x, double y)</a></li>
-<li><a href="#matrix-muldouble-y-matrix-x">Matrix mul(double y, Matrix x)</a></li>
-<li><a href="#matrix-plusdouble-y-matrix-x">Matrix plus(double y, Matrix x)</a></li>
-<li><a href="#matrix-minusdouble-y-matrix-x">Matrix minus(double y, Matrix x)</a></li>
-<li><a href="#matrix-divdouble-y-matrix-x">Matrix div(double y, Matrix x)</a></li>
+<li><a href="#matrix-mulmatrix-x-double-a">Matrix mul(Matrix x, double a)</a></li>
+<li><a href="#matrix-plusmatrix-x-double-a">Matrix plus(Matrix x, double a)</a></li>
+<li><a href="#matrix-minusmatrix-x-double-a">Matrix minus(Matrix x, double a)</a></li>
+<li><a href="#matrix-divmatrix-x-double-a">Matrix div(Matrix x, double a)</a></li>
+<li><a href="#matrix-muldouble-a-matrix-x">Matrix mul(double a, Matrix x)</a></li>
+<li><a href="#matrix-plusdouble-a-matrix-x">Matrix plus(double a, Matrix x)</a></li>
+<li><a href="#matrix-minusdouble-a-matrix-x">Matrix minus(double a, Matrix x)</a></li>
+<li><a href="#matrix-divdouble-a-matrix-x">Matrix div(double a, Matrix x)</a></li>
 <li><a href="#matrix-tmatrix-x">Matrix t(Matrix x)</a></li>
 <li><a href="#matrix-solvematrix-x">Matrix solve(Matrix x)</a></li>
-<li><a href="#matrix-solvematrix-x-matrix-y">Matrix solve(Matrix x, Matrix y)</a></li>
-<li><a href="#vector-solvematrix-x-vector-y">Vector solve(Matrix x, Vector y)</a></li>
+<li><a href="#matrix-solvematrix-a-matrix-b">Matrix solve(Matrix a, Matrix b)</a></li>
+<li><a href="#vector-solvematrix-a-vector-b">Vector solve(Matrix a, Vector b)</a></li>
 <li><a href="#matrix-invmatrix-x">Matrix inv(Matrix x)</a></li>
 <li><a href="#vector-diagmatrix-x">Vector diag(Matrix x)</a></li>
 <li><a href="#matrix-kroneckermatrix-x-matrix-y">Matrix kronecker(Matrix x, Matrix y)</a></li>
@@ -114,18 +115,22 @@ double * ptr;</code></pre>
 <h1 id="functionality">Functionality</h1>
 <h2 id="construction">Construction</h2>
 <h3 id="thislong-r-long-c">this(long r, long c)</h3>
+<pre><code>auto m = Matrix(4, 6);</code></pre>
+<p>Allocates a new (r x c) Matrix in R. It has a unique name that’s stored in <code>data</code>. The pointer <code>ptr</code> points to the underlying data array of length rc. Note that <code>ptr</code> changes over time (even frequently, depending on what you’re doing). It’s rarely a good idea to store <code>ptr</code> anywhere else.</p>
 <h3 id="thismatrix-m">this(Matrix m)</h3>
+<p>Allocates a new Matrix with the same dimensions as <code>m</code>. Makes a copy of the data in <code>m</code>.</p>
 <h3 id="thissubmatrix-sm">this(Submatrix sm)</h3>
+<p>Allocates a new Matrix with the same dimensions as <code>sm</code>. Makes a copy of the data in <code>sm</code>.</p>
 <h3 id="thisvector-v">this(Vector v)</h3>
-<p>Copies the elements of <code>v</code> into a newly allocated matrix with dimensions (v.length x 1).</p>
+<p>Copies the elements of <code>v</code> into a newly allocated Matrix with dimensions (v.length x 1).</p>
 <h3 id="thisvector-v-long-r-long-c">this(Vector v, long r, long c)</h3>
-<p>Copies the elements of <code>v</code> into a newly allocated matrix with dimensions (r x c). Fills by column rather than row.</p>
+<p>Copies the elements of <code>v</code> into a newly allocated Matrix with dimensions (r x c). Fills by column, not row.</p>
 <h3 id="dup">dup</h3>
-<p>Allocates a new matrix and copies the elements into it.</p>
+<p>Allocates a new Matrix of the same dimension and copies the elements into it.</p>
 <h3 id="thisrdata-rd">this(RData rd)</h3>
-<p>Should rarely be used in user code</p>
+<p>Should rarely be used in user code. Creates a new Matrix and copies the data into it. If the Robj inside <code>rd</code> is a Matrix, the dimensions will be the same as that Matrix. If the Robj is a Vector, it will be a Matrix with one column.</p>
 <h3 id="thisstring-code">this(string code)</h3>
-<p>Should rarely be used in user code</p>
+<p>Creates a new Matrix and copies the output of evaluating <code>code</code> into it. If <code>code</code> evaluates to a Matrix, the dimensions will be the same as that Matrix. If the Robj is a Vector, it will be a Matrix with one column.</p>
 <h3 id="examples">Examples</h3>
 <pre><code>auto m1 = Matrix(10, 25);
 auto m2 = Matrix(m1); // R creates a copy of m1
@@ -167,52 +172,88 @@ m[_all, _all] // The entire matrix</code></pre>
 <pre><code>Matrix m2 = m[0..2, 0..2];</code></pre>
 <p>but then we’d have to ban the use of <code>auto</code>. The solution I have adopted is to create a Submatrix, which is a reference to the underlying Matrix.</p>
 <pre><code>auto sm = m.reference;
-m2[0..2, 0..2] = sm[0..2, 0..2]; // Obviously a Submatrix, avoids a copy
-Matrix m3 = sm[0..2, 0..2]; // A new Matrix</code></pre>
-<p>I’ve tried it the other way around, where indexing a block of a Matrix always returns a Submatrix, but it’s too complicated that way. An unnecessary allocation, as much as it might slow your code, is better than the program dying with a segmentation fault. I don’t write <code>reference</code> very often in my own code. It’s a simple optimization in return for never having to worry about segfaults and incorrect results.</p>
+// Alternative syntax: auto sm = m.sub;
+// Submatrix, avoids a copy
+m2[0..2, 0..2] = sm[0..2, 0..2];
+// New Matrix; calls the Matrix constructor
+Matrix m3 = sm[0..2, 0..2]; </code></pre>
+<h3 id="shouldnt-slicing-return-a-reference">Shouldn’t slicing return a reference?</h3>
+<p>One could make the argument that any time you take a slice, it should return a reference to the corresponding parts of the matrix, not a new matrix with those elements copied into it. That’s consistent with D’s array slicing, where <code>v[1..4]</code> is a reference to that part of the array, and if you want a copy, you have to use <code>dup</code>. Indeed, that was the initial design, but this fails spectacularly unless you’re really careful.</p>
+<p>Consider how slices being references can go wrong in vanilla D code:</p>
+<pre><code>import std;
+void main() {
+    auto z = [1.1, 2, 3];
+    writeln(z.ptr);
+    auto z2 = z[];
+    // Same as z.ptr
+    writeln(z2.ptr);
+    
+    z ~= 4;
+    // Now they&#39;re different due to a reallocation
+    writeln(z.ptr);
+    writeln(z2.ptr);
+}</code></pre>
+<p>If you’re not careful, <code>z2</code> might not be pointing to what you think it’s pointing to, and you might end up with a disastrous outcome. The good news is that you’re probably not going to run into many problems writing vanilla D code with slices (at least I don’t).</p>
+<p>The same problem exists when slicing returns a reference to the Matrix, but on a bigger scale. It’s quite common to do things like take a row or a column of a Matrix in numerical code, and operations such as modifying the elements of a Matrix will generally lead to a reallocation, much more so than with D’s built-in arrays. Holding a copy of the pointer simply does not work because the probability of it becoming invalid is so high. It’s more complicated than writing C.</p>
+<p>I considered an alternative solution. Rather than storing a pointer to the underlying data array, I can store the name of the variable in the Submatrix. That adds considerable overhead. On <em>every</em> access, you have to request the Robj that goes with the name, and then you have to get the pointer to the underlying data array. It would be an understatement to say this is inefficient.</p>
+<p>Something that might work is to have the Submatrix hold a pointer to the Matrix. Then on each access, grab the pointer to the data array. While I won’t rule out doing this in the future, since the syntax would be convenient and it would be consistent with other slicing in D, I’m hesitant to add a second pointer. Someone wanting speed, which is really the only reason to put up with the inconvenience of a reference type, is unlikely to want an extra level of indirection.</p>
+<p>For better or worse, the current design requires you to explicitly specify that you want a reference. That’s the clearest for the reader of the code and delivers the best performance. Almost certainly something shorter than <code>reference</code> will be used. You can limit the use of references to only those cases where they’re crucial for performance, and you can limit the set of opportunities to mess things up.</p>
 <h2 id="other-functions">Other Functions</h2>
-<p>These generally work as expected, so there’s not much elaboration here.</p>
+<p>These work as expected, so there’s not much elaboration needed.</p>
 <h3 id="vector-rowsums">Vector rowSums()</h3>
 <h3 id="vector-colsums">Vector colSums()</h3>
 <h3 id="vector-rowmeans">Vector rowMeans()</h3>
 <h3 id="vector-colmeans">Vector colMeans()</h3>
 <h3 id="vector-rowlong-ii">Vector row(long ii)</h3>
-<p>Returns a newly allocated vector with the elements of row ii copied into it.</p>
+<p>Returns a newly allocated Vector with the elements of row ii copied into it.</p>
 <h3 id="vector-columnlong-ii">Vector column(long ii)</h3>
-<p>Returns a newly allocated vector with the elements of column ii copied into it.</p>
+<p>Returns a newly allocated Vector with the elements of column ii copied into it.</p>
 <h3 id="vector-lastrow">Vector lastrow()</h3>
+<p>Returns a newly allocated Vector with the elements of the last row copied into it.</p>
 <h3 id="vector-lastcolumn">Vector lastcolumn()</h3>
+<p>Returns a newly allocated Vector with the elements of the last column copied into it.</p>
 <h3 id="matrix-matmulmatrix-x-matrix-y">Matrix matmul(Matrix x, Matrix y)</h3>
-<p>Matrix multiplication</p>
+<p>Returns a newly allocated Matrix holding the product of <code>x</code> and <code>y</code>. Note that this is matrix multiplication, not element-by-element multiplication. The equivalent of R’s <code>%*%</code> operator.</p>
 <h3 id="matrix-matmulvector-v-matrix-y">Matrix matmul(Vector v, Matrix y)</h3>
-<p>Convert the Vector to a Matrix, then apply matrix multiplication</p>
+<p>Converts <code>v</code> to a Matrix with one column, then does matrix multiplication.</p>
 <h3 id="matrix-matmulmatrix-x-vector-v">Matrix matmul(Matrix x, Vector v)</h3>
-<p>Convert the Vector to a Matrix, then apply matrix multiplication</p>
+<p>Converts <code>v</code> to a Matrix with one column, then does matrix multiplication.</p>
 <h3 id="matrix-elmulmatrix-x-matrix-y">Matrix elmul(Matrix x, Matrix y)</h3>
 <p>Element-by-element multiplication of x and y. Explicit naming is used to avoid confusion.</p>
 <h3 id="matrix-plusmatrix-x-matrix-y">Matrix plus(Matrix x, Matrix y)</h3>
+<p>Returns a newly allocated matrix holding the sum of <code>x</code> and <code>y</code>.</p>
 <h3 id="matrix-minusmatrix-x-matrix-y">Matrix minus(Matrix x, Matrix y)</h3>
+<p>Returns a newly allocated matrix holding <code>x - y</code>.</p>
 <h3 id="matrix-divmatrix-x-matrix-y">Matrix div(Matrix x, Matrix y)</h3>
-<h3 id="matrix-mulmatrix-x-double-y">Matrix mul(Matrix x, double y)</h3>
-<h3 id="matrix-plusmatrix-x-double-y">Matrix plus(Matrix x, double y)</h3>
-<h3 id="matrix-minusmatrix-x-double-y">Matrix minus(Matrix x, double y)</h3>
-<h3 id="matrix-divmatrix-x-double-y">Matrix div(Matrix x, double y)</h3>
-<h3 id="matrix-muldouble-y-matrix-x">Matrix mul(double y, Matrix x)</h3>
-<h3 id="matrix-plusdouble-y-matrix-x">Matrix plus(double y, Matrix x)</h3>
-<h3 id="matrix-minusdouble-y-matrix-x">Matrix minus(double y, Matrix x)</h3>
-<h3 id="matrix-divdouble-y-matrix-x">Matrix div(double y, Matrix x)</h3>
+<p>Returns a newly allocated matrix holding the element-by-element division <code>x / y</code>.</p>
+<h3 id="matrix-mulmatrix-x-double-a">Matrix mul(Matrix x, double a)</h3>
+<p>Returns a newly allocated matrix holding <code>ax</code>.</p>
+<h3 id="matrix-plusmatrix-x-double-a">Matrix plus(Matrix x, double a)</h3>
+<p>Returns a newly allocated matrix holding the result of adding <code>a</code> to every element of <code>x</code>.</p>
+<h3 id="matrix-minusmatrix-x-double-a">Matrix minus(Matrix x, double a)</h3>
+<p>Returns a newly allocated matrix holding the result of subtracting <code>a</code> from every element of <code>x</code>.</p>
+<h3 id="matrix-divmatrix-x-double-a">Matrix div(Matrix x, double a)</h3>
+<p>Returns a newly allocated matrix holding the result of dividing every element of <code>x</code> by <code>a</code>.</p>
+<h3 id="matrix-muldouble-a-matrix-x">Matrix mul(double a, Matrix x)</h3>
+<p>Returns a newly allocated matrix holding <code>ax</code>.</p>
+<h3 id="matrix-plusdouble-a-matrix-x">Matrix plus(double a, Matrix x)</h3>
+<p>Returns a newly allocated matrix holding the result of adding <code>a</code> to every element of <code>x</code>.</p>
+<h3 id="matrix-minusdouble-a-matrix-x">Matrix minus(double a, Matrix x)</h3>
+<p>Returns a newly allocated matrix holding the result of subtracting every element of <code>x</code> from <code>a</code>.</p>
+<h3 id="matrix-divdouble-a-matrix-x">Matrix div(double a, Matrix x)</h3>
+<p>Returns a newly allocated matrix holding the result of dividing a by every element of <code>x</code>.</p>
 <h3 id="matrix-tmatrix-x">Matrix t(Matrix x)</h3>
-<p>Transpose of x</p>
+<p>Returns a newly allocated Matrix holding the transpose of <code>x</code>.</p>
 <h3 id="matrix-solvematrix-x">Matrix solve(Matrix x)</h3>
-<p>Following R, returns the inverse of x. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
-<h3 id="matrix-solvematrix-x-matrix-y">Matrix solve(Matrix x, Matrix y)</h3>
-<p>Solution of a system of equations. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
-<h3 id="vector-solvematrix-x-vector-y">Vector solve(Matrix x, Vector y)</h3>
-<p>Solution of a system of equations. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
+<p>Following R, returns a newly allocated Matrix holding the inverse of <code>x</code>. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
+<h3 id="matrix-solvematrix-a-matrix-b">Matrix solve(Matrix a, Matrix b)</h3>
+<p>Solution of a system of equations. Solves <code>aX=b</code> for <code>X</code>. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
+<h3 id="vector-solvematrix-a-vector-b">Vector solve(Matrix a, Vector b)</h3>
+<p>Solution of a system of equations. Solves <code>aX=b</code> for <code>X</code>. See <a href="https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve">the R documentation</a>.</p>
 <h3 id="matrix-invmatrix-x">Matrix inv(Matrix x)</h3>
-<p>Inverse of x. Same as <code>solve(x)</code>.</p>
+<p>Same as <code>solve(x)</code>.</p>
 <h3 id="vector-diagmatrix-x">Vector diag(Matrix x)</h3>
-<p>Returns the diagonal of x as a Vector. Requires x to be square.</p>
+<p>Returns a newly allocated Vector holding the elements of the diagonal of <code>x</code>. <code>x</code> is required to be square.</p>
 <h3 id="matrix-kroneckermatrix-x-matrix-y">Matrix kronecker(Matrix x, Matrix y)</h3>
 <h3 id="matrix-crossprodmatrix-x-matrix-y">Matrix crossprod(Matrix x, Matrix y)</h3>
 <h3 id="matrix-tcrossprodmatrix-x-matrix-y">Matrix tcrossprod(Matrix x, Matrix y)</h3>

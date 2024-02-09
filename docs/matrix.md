@@ -29,29 +29,39 @@ The dimensions of `m2` can be confirmed to match `m[1..3, 2..4]` and the corresp
 
 ### this(long r, long c)
 
+```
+auto m = Matrix(4, 6);
+```
+
+Allocates a new (r x c) Matrix in R. It has a unique name that's stored in `data`. The pointer `ptr` points to the underlying data array of length rc. Note that `ptr` changes over time (even frequently, depending on what you're doing). It's rarely a good idea to store `ptr` anywhere else.
+
 ### this(Matrix m)
+
+Allocates a new Matrix with the same dimensions as `m`. Makes a copy of the data in `m`.
 
 ### this(Submatrix sm)
 
+Allocates a new Matrix with the same dimensions as `sm`. Makes a copy of the data in `sm`.
+
 ### this(Vector v)
 
-Copies the elements of `v` into a newly allocated matrix with dimensions (v.length x 1).
+Copies the elements of `v` into a newly allocated Matrix with dimensions (v.length x 1).
 
 ### this(Vector v, long r, long c)
 
-Copies the elements of `v` into a newly allocated matrix with dimensions (r x c). Fills by column rather than row.
+Copies the elements of `v` into a newly allocated Matrix with dimensions (r x c). Fills by column, not row.
 
 ### dup
 
-Allocates a new matrix and copies the elements into it.
+Allocates a new Matrix of the same dimension and copies the elements into it.
 
 ### this(RData rd)
 
-Should rarely be used in user code
+Should rarely be used in user code. Creates a new Matrix and copies the data into it. If the Robj inside `rd` is a Matrix, the dimensions will be the same as that Matrix. If the Robj is a Vector, it will be a Matrix with one column.
 
 ### this(string code)
 
-Should rarely be used in user code
+Creates a new Matrix and copies the output of evaluating `code` into it. If `code` evaluates to a Matrix, the dimensions will be the same as that Matrix. If the Robj is a Vector, it will be a Matrix with one column.
 
 ### Examples
 
@@ -145,15 +155,48 @@ but then we'd have to ban the use of `auto`. The solution I have adopted is to c
 
 ```
 auto sm = m.reference;
-m2[0..2, 0..2] = sm[0..2, 0..2]; // Obviously a Submatrix, avoids a copy
-Matrix m3 = sm[0..2, 0..2]; // A new Matrix
+// Alternative syntax: auto sm = m.sub;
+// Submatrix, avoids a copy
+m2[0..2, 0..2] = sm[0..2, 0..2];
+// New Matrix; calls the Matrix constructor
+Matrix m3 = sm[0..2, 0..2]; 
 ```
 
-I've tried it the other way around, where indexing a block of a Matrix always returns a Submatrix, but it's too complicated that way. An unnecessary allocation, as much as it might slow your code, is better than the program dying with a segmentation fault. I don't write `reference` very often in my own code. It's a simple optimization in return for never having to worry about segfaults and incorrect results.
+### Shouldn't slicing return a reference?
+
+One could make the argument that any time you take a slice, it should return a reference to the corresponding parts of the matrix, not a new matrix with those elements copied into it. That's consistent with D's array slicing, where `v[1..4]` is a reference to that part of the array, and if you want a copy, you have to use `dup`. Indeed, that was the initial design, but this fails spectacularly unless you're really careful.
+
+Consider how slices being references can go wrong in vanilla D code:
+
+```
+import std;
+void main() {
+    auto z = [1.1, 2, 3];
+    writeln(z.ptr);
+    auto z2 = z[];
+    // Same as z.ptr
+    writeln(z2.ptr);
+    
+    z ~= 4;
+    // Now they're different due to a reallocation
+    writeln(z.ptr);
+    writeln(z2.ptr);
+}
+```
+
+If you're not careful, `z2` might not be pointing to what you think it's pointing to, and you might end up with a disastrous outcome. The good news is that you're probably not going to run into many problems writing vanilla D code with slices (at least I don't).
+
+The same problem exists when slicing returns a reference to the Matrix, but on a bigger scale. It's quite common to do things like take a row or a column of a Matrix in numerical code, and operations such as modifying the elements of a Matrix will generally lead to a reallocation, much more so than with D's built-in arrays. Holding a copy of the pointer simply does not work because the probability of it becoming invalid is so high. It's more complicated than writing C.
+
+I considered an alternative solution. Rather than storing a pointer to the underlying data array, I can store the name of the variable in the Submatrix. That adds considerable overhead. On *every* access, you have to request the Robj that goes with the name, and then you have to get the pointer to the underlying data array. It would be an understatement to say this is inefficient.
+
+Something that might work is to have the Submatrix hold a pointer to the Matrix. Then on each access, grab the pointer to the data array. While I won't rule out doing this in the future, since the syntax would be convenient and it would be consistent with other slicing in D, I'm hesitant to add a second pointer. Someone wanting speed, which is really the only reason to put up with the inconvenience of a reference type, is unlikely to want an extra level of indirection.
+
+For better or worse, the current design requires you to explicitly specify that you want a reference. That's the clearest for the reader of the code and delivers the best performance. Almost certainly something shorter than `reference` will be used. You can limit the use of references to only those cases where they're crucial for performance, and you can limit the set of opportunities to mess things up.
 
 ## Other Functions
 
-These generally work as expected, so there's not much elaboration here.
+These work as expected, so there's not much elaboration needed.
 
 ### Vector rowSums()
 
@@ -165,27 +208,31 @@ These generally work as expected, so there's not much elaboration here.
 
 ### Vector row(long ii)
 
-Returns a newly allocated vector with the elements of row ii copied into it.
+Returns a newly allocated Vector with the elements of row ii copied into it.
 
 ### Vector column(long ii)
 
-Returns a newly allocated vector with the elements of column ii copied into it.
+Returns a newly allocated Vector with the elements of column ii copied into it.
 
 ### Vector lastrow()
 
+Returns a newly allocated Vector with the elements of the last row copied into it.
+
 ### Vector lastcolumn()
+
+Returns a newly allocated Vector with the elements of the last column copied into it.
 
 ### Matrix matmul(Matrix x, Matrix y)
 
-Matrix multiplication
+Returns a newly allocated Matrix holding the product of `x` and `y`. Note that this is matrix multiplication, not element-by-element multiplication. The equivalent of R's `%*%` operator.
 
 ### Matrix matmul(Vector v, Matrix y)
 
-Convert the Vector to a Matrix, then apply matrix multiplication
+Converts `v` to a Matrix with one column, then does matrix multiplication.
 
 ### Matrix matmul(Matrix x, Vector v)
 
-Convert the Vector to a Matrix, then apply matrix multiplication
+Converts `v` to a Matrix with one column, then does matrix multiplication.
 
 ### Matrix elmul(Matrix x, Matrix y)
 
@@ -193,49 +240,71 @@ Element-by-element multiplication of x and y. Explicit naming is used to avoid c
 
 ### Matrix plus(Matrix x, Matrix y)
 
+Returns a newly allocated matrix holding the sum of `x` and `y`.
+
 ### Matrix minus(Matrix x, Matrix y)
+
+Returns a newly allocated matrix holding `x - y`.
 
 ### Matrix div(Matrix x, Matrix y) 
 
-### Matrix mul(Matrix x, double y)
+Returns a newly allocated matrix holding the element-by-element division `x / y`.
 
-### Matrix plus(Matrix x, double y) 
+### Matrix mul(Matrix x, double a)
 
-### Matrix minus(Matrix x, double y)
+Returns a newly allocated matrix holding `ax`.
 
-### Matrix div(Matrix x, double y)
+### Matrix plus(Matrix x, double a)
 
-### Matrix mul(double y, Matrix x)
+Returns a newly allocated matrix holding the result of adding `a` to every element of `x`.
 
-### Matrix plus(double y, Matrix x)
+### Matrix minus(Matrix x, double a)
 
-### Matrix minus(double y, Matrix x) 
+Returns a newly allocated matrix holding the result of subtracting `a` from every element of `x`.
 
-### Matrix div(double y, Matrix x) 
+### Matrix div(Matrix x, double a)
+
+Returns a newly allocated matrix holding the result of dividing every element of `x` by `a`.
+
+### Matrix mul(double a, Matrix x)
+
+Returns a newly allocated matrix holding `ax`.
+
+### Matrix plus(double a, Matrix x)
+
+Returns a newly allocated matrix holding the result of adding `a` to every element of `x`.
+
+### Matrix minus(double a, Matrix x) 
+
+Returns a newly allocated matrix holding the result of subtracting every element of `x` from `a`.
+
+### Matrix div(double a, Matrix x) 
+
+Returns a newly allocated matrix holding the result of dividing a by every element of `x`.
 
 ### Matrix t(Matrix x) 
 
-Transpose of x
+Returns a newly allocated Matrix holding the transpose of `x`.
 
 ### Matrix solve(Matrix x) 
 
-Following R, returns the inverse of x. See [the R documentation](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve).
+Following R, returns a newly allocated Matrix holding the inverse of `x`. See [the R documentation](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve).
 
-### Matrix solve(Matrix x, Matrix y) 
+### Matrix solve(Matrix a, Matrix b) 
 
-Solution of a system of equations. See [the R documentation](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve).
+Solution of a system of equations. Solves `aX=b` for `X`. See [the R documentation](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve).
 
-### Vector solve(Matrix x, Vector y) 
+### Vector solve(Matrix a, Vector b) 
 
-Solution of a system of equations. See [the R documentation](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve).
+Solution of a system of equations. Solves `aX=b` for `X`. See [the R documentation](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/solve).
 
 ### Matrix inv(Matrix x)
 
-Inverse of x. Same as `solve(x)`.
+Same as `solve(x)`.
 
 ### Vector diag(Matrix x) 
 
-Returns the diagonal of x as a Vector. Requires x to be square.
+Returns a newly allocated Vector holding the elements of the diagonal of `x`. `x` is required to be square.
 
 ### Matrix kronecker(Matrix x, Matrix y) 
 
