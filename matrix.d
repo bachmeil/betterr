@@ -182,6 +182,10 @@ struct Matrix {
     return Submatrix(this, [0, 0], [rows, cols]);
   }
   
+  Submatrix sub() {
+    return Submatrix(this, [0, 0], [rows, cols]);
+  }
+  
   Vector rowSums() {
     return Vector("rowSums(" ~ this.data.name ~ ")");
   }
