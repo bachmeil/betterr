@@ -146,6 +146,7 @@ extern(C) {
 - [R lazy copying](lazycopy.html)
 - [Understanding argument lists in the R source](arglists.html)
 - [Passing function pointers around](funcptr.html)
+- [Using the GSL to generate random numbers sequentially or in parallel](gslrng.html)
 - [Options for numerical programming in D](numerical.html)
 
 # Thoughts

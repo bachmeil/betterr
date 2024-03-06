@@ -8,9 +8,15 @@ Feel free to use it, but things might break. There's no intention of turning thi
 
 # Recent changes
 
+March 6, 2024: I added prng.d, which is a port of a parallel RNG written in Java by Pierre L'Ecuyer. gslheaders.c is the C header code needed to call the GSL functions that generate draws from different distributions. testgslprng.d is an example that shows how to use it.
+
+This was one of the few remaining optimization opportunities for betterr. Although the previous options covered most cases, there was still some overhead, and a random number generator is something that gets called many times in the course of a simulation (even a small simulation). With this, you can generate draws sequentially (giving high speed in one process) or parallel (somewhat slower but simultaneously across many processes at once). The GSL is heavily used, well-tested project written in C. This should eliminate any concerns about the speed of betterr for RNG.
+
+Another change is to add function dqrls, which is the Fortran function that R uses for `lm`. You can directly call that function from your D code.
+
 Jan 20, 2024: Mir was a very large dependency that was most of the size of the project. Even after stripping out the Mir modules that weren't needed, it was still 2.7 MB of D source files. That might not seem like a lot, but my standard usage involves copying all of the dependency files into the project directory and compiling with `ldmd -i`. Beyond the obvious convenience and stability benefits, copying the dependencies into the project facilitates reproducibility, which is critical for academic research.
 
-Adding more than 3 MB of files before you've done anything was too much for me. The Mir functions weren't even playing a big role. There were a few functions in baser.d that called into Mir to provide fast versions of mean, median, and a couple other things. Those few functions were responsible for more than 90% of the size of betterr. dstats and Phobos provided equivalent functionality. After stripping dstats down as much as possible, the dependency was a single 20.5k file. Rather than MB, the total size of the dependency is now about 200k. Mir will be removed completely from this repo in the future. You can add Mir manually to your project if you wish.
+Adding more than 3 MB of files before you've done anything was too much for me. The Mir functions weren't even playing a big role. There were a few functions in baser.d that called into Mir to provide fast versions of mean, median, and a couple other things. Those few functions were responsible for more than 90% of the size of betterr. dstats and Phobos provided equivalent functionality. After stripping dstats down as much as possible, the dependency was a single 20.5k file. Rather than MB, the total size of the dependency is now about 200k. Mir will be removed completely from this repo in the future. You can still add Mir manually to your project if you wish.
 
 A source of friction was the manual setup I had been using. I added an installation script. I run `rdmd install.d dirname` to install betterr and create a Makefile in directory dirname.
 
