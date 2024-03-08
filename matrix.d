@@ -1198,3 +1198,4 @@ struct BoolMatrix {
     ptr[c*rows+r] = v.to!int;
   }
 }
+
