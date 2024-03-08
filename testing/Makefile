@@ -70,3 +70,6 @@ cran:
 
 mir:
 	cp $(REPO)/mir $(shell pwd)/mir
+
+prng:
+	ldmd2 -i testgslprng.d -L-lgsl
