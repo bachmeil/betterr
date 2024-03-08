@@ -360,8 +360,82 @@ void prngInit(long stream, long seed=1) {
   }
 }
 
-
+/* GSL versions
+ * Take a pointer and a length
+ * That's a general version because these functions can be called many
+ * times and I don't want to make decisions for the caller about data
+ * allocation. There's an expectation of higher-level wrappers being
+ * called. */
+version(gsl) {
+  import gslheaders;
   
+  double rnorm(gsl_rng * r) {
+    return gsl_ran_ugaussian(r);
+  }
+  
+  void rnorm(gsl_rng * r, double * v, long n) {
+    foreach(ii; 0..n) {
+      v[ii] = gsl_ran_ugaussian(r);
+    }
+  }
+  
+  void rnorm(gsl_rng * r, double[] v) {
+    rnorm(r, v.ptr, v.length);
+  }
+  
+  double rnorm(gsl_rng * r, double sigma) {
+    return gsl_ran_gaussian(r, sigma);
+  }
+  
+  double rnorm(gsl_rng * r, double mu, double sigma) {
+    return mu + gsl_ran_gaussian(r, sigma);
+  }
+  
+  void rnorm(gsl_rng * r, double * v, long n, double sigma) {
+    foreach(ii; 0..n) {
+      v[ii] = rnorm(r, sigma);
+    }
+  }
+  
+  void rnorm(gsl_rng * r, double[] v, double sigma) {
+    rnorm(r, v.ptr, v.length, sigma);
+  }
+  
+  void rnorm(gsl_rng * r, double * v, long n, double mu, double sigma) {
+    foreach(ii; 0..n) {
+      v[ii] = rnorm(r, mu, sigma);
+    }
+  }
+  
+  void rnorm(gsl_rng * r, double[] v, double mu, double sigma) {
+    rnorm(r, v.ptr, v.length, mu, sigma);
+  }
+  
+  double[] rnorm(gsl_rng * r, long k) {
+    auto result = new double[k];
+    rnorm(r, result);
+    return result;
+  }
+  
+  double[] rnorm(gsl_rng * r, long k, double sigma) {
+    auto result = new double[k];
+    rnorm(r, result, sigma);
+    return result;
+  }
+  
+  double[] rnorm(gsl_rng * r, long k, double mu, double sigma) {
+    auto result = new double[k];
+    rnorm(r, result, mu, sigma);
+    return result;
+  }
+    
+    
+  //~ double runif(gsl_rng *r) {
+  //~ }
+  
+  //~ double rgamma(gsl_rng *r) {
+  //~ }
+}
   
   
   
