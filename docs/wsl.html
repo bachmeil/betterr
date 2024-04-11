@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>wsl</title>
+  <style type="text/css">code{white-space: pre;}</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+<style>html{margin-top: -60px;}</style>
+
+</head>
+<body>
+<div class="container"><br><br>
+<div id="TOC">
+<h1>Contents</h1>
+<ul>
+<li><a href="#using-betterr-from-windows-with-wsl">Using BetterR from Windows with WSL</a>
+<ul>
+<li><a href="#whats-wsl">What’s WSL?</a></li>
+<li><a href="#install-wsl">Install WSL</a></li>
+<li><a href="#install-vs-code">Install VS Code</a></li>
+<li><a href="#connecting-vs-code-to-wsl">Connecting VS Code to WSL</a></li>
+<li><a href="#install-windows-terminal-preview">Install Windows Terminal Preview</a></li>
+<li><a href="#install-r-and-rinside">Install R and RInside</a></li>
+<li><a href="#install-betterr">Install BetterR</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="using-betterr-from-windows-with-wsl">Using BetterR from Windows with WSL</h1>
+<p>Although it should be straightforward to get BetterR working on Windows with a “native” workflow, where you install a Windows version of the D compiler and do your compilation using traditional Windows development tools, the reality is that I don’t have the time to figure out how to get all of that working or to support users that primarily use scripting languages. As a Linux user, even if I had lots of excess time, I would not have the expertise needed to provide users with technical support as they set up a native Windows workflow. I will be happy to work with anyone wanting to do that job. If you’re experienced with D development on Windows, it probably won’t be difficult.</p>
+<p>You should not take the above statement to mean I never do D programming on Windows. I actually do quite a bit of development on a Windows laptop, but not using a traditional Windows workflow. Instead, I use the combination of Windows Subsystem for Linux (WSL) and VS Code. I’d honestly recommend this approach for anyone that’s using languages like R and Python on Windows. The learning curve to get going with the traditional Windows development workflow is steep, and if you’re interested in BetterR, you’ll probably find the WSL-based workflow much easier.</p>
+<h2 id="whats-wsl">What’s WSL?</h2>
+<p>WSL is a Windows feature that allows you to run a Linux distribution inside of Windows. It’s an official part of Windows, maintained and supported by Microsoft, though you’ve probably never heard of it if you’re not a software developer. You can learn more about it <a href="https://learn.microsoft.com/en-us/windows/wsl/about">in this article</a>.</p>
+<h2 id="install-wsl">Install WSL</h2>
+<p>You can find details about installing WSL in <a href="https://learn.microsoft.com/en-us/windows/wsl/install">this Microsoft tutorial</a>. I strongly encourage you to go with the default Linux distribution, which is currently Ubuntu 22.04.</p>
+<h2 id="install-vs-code">Install VS Code</h2>
+<p>You can download and install VS Code <a href="https://code.visualstudio.com/download">at the official download site</a>.</p>
+<h2 id="connecting-vs-code-to-wsl">Connecting VS Code to WSL</h2>
+<p>The next step is to <a href="https://code.visualstudio.com/docs/remote/wsl-tutorial">connect to WSL from VS Code</a>.</p>
+<h2 id="install-windows-terminal-preview">Install Windows Terminal Preview</h2>
+<p>Windows Terminal Preview is an excellent terminal with built-in support for WSL. You can install it through the Microsoft Store. If you don’t like the Microsoft Store, you <a href="https://github.com/microsoft/terminal">have other options</a>.</p>
+<h2 id="install-r-and-rinside">Install R and RInside</h2>
+<p>In Windows Terminal Preview, open your Ubuntu 22.04 WSL.</p>
+<p><img src="open-wsl.png" /></p>
+<p>Now install R and RInside:</p>
+<pre><code>sudo apt install R</code></pre>
+<p><img src="install-r.png" /></p>
+<p>Open R and install RInside:</p>
+<pre><code>R
+
+&gt; install.packages(&quot;RInside&quot;)</code></pre>
+<p><img src="install-rinside.png" /></p>
+<h2 id="install-betterr">Install BetterR</h2>
+<p>The easiest way to install BetterR for now is to clone the repository. You might need to install git first.</p>
+<pre><code>sudo apt install git
+mkdir ~/repos
+cd ~/repos
+git clone https://github.com/bachmeil/betterr.git</code></pre>
+<p>You can use the installation utility to install it to the working directory of your choice:</p>
+<pre><code>mkdir ~/project
+rdmd ./install.d ~/project</code></pre>
+<p><img src="clone-repo.png" /></p>
+<p>Now you can return to VS Code, connect to the WSL session, and open the project directory in ~/project.</p>
+
+<br>
+<a href="index.html">Index</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/bachmeil/betterr">Repo</a>
+</div>
+<br><br>
+</body>
+</html>

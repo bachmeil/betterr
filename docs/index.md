@@ -135,6 +135,7 @@ extern(C) {
 
 # Notes on Various Topics
 
+- [Using betterr with WSL](wsl.html)
 - [Evaluating arbitrary R code](evalr.html)
 - [Accessing databases](databases.html)
 - [Generating scalar random variables efficiently](randomscalar.html)
