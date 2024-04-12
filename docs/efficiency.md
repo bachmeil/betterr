@@ -124,24 +124,30 @@ To be useful, you need a complete set of data structures that are common to both
 
 ## But your program probably won't be slow
 
-Here are some reasons your program is unlikely to be slow - and will almost always be faster than R.
+Here are some reasons your program is unlikely to be slow - and will almost always be much faster than R.
 
 *Access to the underlying data arrays.* As demonstrated above, you have direct access to the data. You get and set elements the same as you would the elements of a `double[]`. Accessing elements through R brings with it considerable overhead. It checks the type of the arguments, checks for valid data, and so on. You bypass that completely. This alone will lead to big speedups over R.
 
 *A lot of R is just a thin wrapper over C functions.* If you want to multiply two large matrices, there'll be a little overhead relative to calling into BLAS directly, but the overhead is minimal relative to the work that needs to be done for the multiplication. Numerous operations like reading in data, estimating regression coefficients, and sorting data are similar, with almost all of the work being done in C.
 
-*You can optimize as much as you want.* For linear algebra, you can use the Matrix package (installed by default) to allocate and perform operations on matrices and vectors. There are examples provided to show how to manage the memory using unique pointers, but you can use any strategy you want, including manually protecting and unprotecting. If you prefer to use OpenBLAS, which doesn't do any checks but gives the best possible performance, you can do that. testblas.d includes some examples. I've never had a need to call BLAS directly, but it's easy to do if you want.
+*Convenient library for matrix operations and linear algebra using OpenBLAS.* Much of the matrix functionality provided by Gretl has been pulled out into a standalone library. The matrix operations are written in C and linear algebra is done by OpenBLAS. As you'd expect, there are wrappers over the C and OpenBLAS functions that make it easier to write correct, efficient code, and any memory allocated with malloc is wrapped in SafeRefCounted structs, freeing you to spend your time doing your work rather than tracking down memory leaks and segfaults.
 
-*The R API provides functionality written in C.* You can use [the R API](https://rstudio.github.io/r-manuals/r-exts/The-R-API.html) for random distributions, a variety of functions, and numerical optimization routines.
+*Efficient random number generation.* The random number generation functionality of the GNU Scientific Library has been stripped out and is available for generating random numbers. A GSL-compatible D implementation of one of L'Ecuyer's parallel RNG functions. You have access to generators for a wide range of distributions, and you can make full use of all cores on your computer.
 
-*Internally, some of the functions use compiled functions rather than calling R.* The Mir libraries are a set of high-quality libraries providing fundamental operations such as calculating the mean, median, and quantiles. Mir is optimized D code.
+*You can optimize as much as you want.* As long as there's an interface you can call from D (which includes anything you can call from C or R) you can call it with betterr. 
 
-*Scalar RNG is efficient.* Generators are used to make scalar RNG move quickly. If you need every last cycle, you can call the GNU Scientific Library random number generation functions. ImportC does all the work needed for interoperability. There's a GSL-compatible D implementation of one of L'Ecuyer's parallel RNG functions.
+*The R API exposes many functions written in C.* You can use [the R API](https://rstudio.github.io/r-manuals/r-exts/The-R-API.html) for random distributions, a variety of functions, and numerical optimization routines.
 
-In short, there are not a lot of things you'd want to do where you're stuck with what we think of as "R performance". Additional optimizations beyond those provided by betterr are probably (though not necessarily) a waste of your time.
+*Access to R's optimization routines.* Not only do you have access to the built-in routines available with `optim`, you can call other optimization functions for things like constrained optimization. Examples show how to pass a D function that evaluates the objective function for a choice of the parameters.
+
+*Thousands of R packages provide an interface to C, Fortran, and C++ code.* You can work directly with the R interface provided to these libraries and R will not be involved.
+
+*Internally, some of the functions use compiled functions rather than calling R.* Some functions have been written in D rather than calling the R version.
+
+In short, there are not a lot of things you'd want to do where you're stuck with what we think of as "R performance". Additional optimizations beyond those provided by betterr are probably (though not necessarily in every case) a waste of your time.
 
 ## There are reasons other than performance to write your program in D
 
 One of the things that annoys me is the claim that performance is the only benefit of using D. That's so far from correct that it's not even wrong. Maybe you want to add a little statistical/numerical functionality to a D program that is otherwise non-numerical. All you need in that case is the functionality, not 100% optimized performance. D is a good general purpose programming language. You can have all of R's functionality plus the beauty of static typing and everything else that comes with writing a program in D.
 
-Along these lines, you can read my thoughts on [scaling to zero here](scaling.md). 
+Along these lines, you can read my thoughts on [scaling to zero here](scaling.md).
