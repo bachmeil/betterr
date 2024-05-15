@@ -383,6 +383,7 @@ version(gsl) {
     rnorm(r, v.ptr, v.length);
   }
   
+
   double rnorm(gsl_rng * r, double sigma) {
     return gsl_ran_gaussian(r, sigma);
   }
@@ -401,6 +402,7 @@ version(gsl) {
     rnorm(r, v.ptr, v.length, sigma);
   }
   
+
   void rnorm(gsl_rng * r, double * v, long n, double mu, double sigma) {
     foreach(ii; 0..n) {
       v[ii] = rnorm(r, mu, sigma);
@@ -411,6 +413,7 @@ version(gsl) {
     rnorm(r, v.ptr, v.length, mu, sigma);
   }
   
+
   double[] rnorm(gsl_rng * r, long k) {
     auto result = new double[k];
     rnorm(r, result);
@@ -428,13 +431,76 @@ version(gsl) {
     rnorm(r, result, mu, sigma);
     return result;
   }
-    
-    
-  //~ double runif(gsl_rng *r) {
-  //~ }
   
-  //~ double rgamma(gsl_rng *r) {
-  //~ }
+  double runif(gsl_rng * r) {
+		return runif(r, 0, 1);
+	}
+	
+	void runif(gsl_rng * r, double * v, long n) {
+		foreach(ii; 0..n) {
+			v[ii] = runif(r);
+		}
+	}
+	
+	void runif(gsl_rng * r, double[] v) {
+		runif(r, v.ptr, v.length);
+	}
+	
+	double runif(gsl_rng * r, double a, double b) {
+		return gsl_ran_flat(r, a, b);
+	}
+	
+	void runif(gsl_rng * r, double * v, long n, double a, double b) {
+		foreach(ii; 0..n) {
+			v[ii] = runif(r, a, b);
+		}
+	}
+	
+	void runif(gsl_rng * r, double[] v, double a, double b) {
+		runif(r, v.ptr, v.length, a, b);
+	}
+	
+	double rgamma(gsl_rng * r, double a, double b) {
+		return gsl_ran_gamma(r, a, b);
+	}
+	
+	void rgamma(gsl_rng * r, double * v, long n, double a, double b) {
+		foreach(ii; 0..n) {
+			v[ii] = rgamma(r, a, b);
+		}
+	}
+	
+	void rgamma(gsl_rng * r, double[] v, double a, double b) {
+		rgamma(r, v.ptr, v.length, a, b);
+	}
+	
+	double rt(gsl_rng * r, double nu) {
+		return gsl_ran_tdist(r, nu);
+	}
+	
+	void rt(gsl_rng * r, double * v, long n, double nu) {
+		foreach(ii; 0..n) {
+			v[ii] = rt(r, nu);
+		}
+	}
+	
+	void rt(gsl_rng * r, double[] v, double nu) {
+		rt(r, v.ptr, v.length, nu);
+	}
+	
+	double rf(gsl_rng * r, double nu1, double nu2) {
+		return gsl_ran_fdist(r, nu1, nu2);
+	}
+	
+	void rf(gsl_rng * r, double * v, long n, double nu1, double nu2) {
+		foreach(ii; 0..n) {
+			v[ii] = rf(r, nu1, nu2);
+		}
+	}
+	
+	void rf(gsl_rng * r, double[] v, double nu1, double nu2) {
+		rf(r, v.ptr, v.length, nu1, nu2);
+	}
 }
   
   

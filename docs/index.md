@@ -1,53 +1,162 @@
 # D as a Better R
 
-This project is a collection of things I've been doing over the last
-decade to connect R and D. Although I released an earlier project called
-embedr, even writing a blog post about it for the D blog, that project
+This project is a collection of the things I've been doing since 2013 that
+connect the D and R languages.[^1] There are also some libraries
+that can be used in cases where efficiency is critical. The intended audience
+is an academic researcher doing the type of data analysis that gets done with
+R, but who has a preference to write their program in D, whether for
+speed, static typing, or the nice features of the language. Even though the
+intended audience is academic researchers doing empirical work, it is likely
+to be of interest to anyone doing statistical analysis, and to some
+doing scientific and numerical computing in software such as
+Matlab.[^2] 
+
+The emphasis is on functionality and the speed with which you
+can write correct code. When this conflicts with performance, I've been
+willing to let my programs run 6% longer. I want to minimize the
+learning curve as much as possible. For instance, one design goal is
+that you don't need to know anything about memory allocation,
+memory management, or garbage collection. As soon as you introduce those
+requirements, you've lost almost the entire community of academic
+researchers, and the ones that persevere are likely to get things wrong
+and waste a lot of time not doing the analysis they're supposed to be
+doing. I'm not targeting C++ or Rust programmers, who will surely be
+repulsed by the focus on getting work done and the absence of premature
+optimization.
+
+[^1]: I released an earlier project called embedr, and even wrote [a blog 
+post about it for the D blog](https://dlang.org/blog/2020/01/27/d-for-data-science-calling-r-from-d/). The latest version of that project [can be found here](https://github.com/bachmeil/embedrv2).
+While that project
 only made available a fraction of the things I'd done to that point.
 
-In addition, while the interoperability went in both directions (D calling
-R functions and R calling D functions) the focus was primarily on support
-for writing D functions that would be called from R. I don't have an
-opinion on whether that was the right thing to do, but over time I have
-come to the conclusion that I want to write my programs in D, but without
-having to give up the functionality of R.
+[^2]: Although performance is suitable for most uses, it does not and never will
+provide the fastest code possible. You'll want to look at libraries such
+as Mir if that's your goal, because this project doesn't have much to
+offer you on that dimension.
 
-The starting point for interoperability is data sharing. That meant I
-needed to have a way to create, access, and manipulate the main R data 
-structures from D and R. I'd need to work with data frames, vectors, matrices,
-lists, and so on from my D program, but importantly, I needed them to
-be available to R at the same time. This was not a trivial undertaking. 
-You need three things for this to be practical:
+My earlier focus was on writing D functions and calling them from R,
+motivated by what Rcpp had done for C++ usage. My [embedrv2](https://github.com/bachmeil/embedrv2)
+project makes this easy by using metaprogramming to write the bindings
+for you. Over time I've come to the conclusion that this is the wrong
+direction for interoperability. I want to write complete programs
+in D, not R programs with a few bottlenecks rewritten in D. The approach
+I've taken is to treat the full R language as a library called by my D
+program. My D programs have full access to everything in base R, all
+packages, all libraries with an R interface...literally everything you
+get with R is available in D, in a fully seamless fashion that feels like
+it's D all the way down.
 
-- Allocation of the data structures. This is fairly easy. You can send
-some code to R and capture a pointer to the data, or you can call
-functions in libR.so, the shared library written in C and Fortran that 
-R uses internally.
+Now, there are certainly some downsides to this. You have to write wrappers
+over R. A few things are inherently slower once you involve R, so you need
+to rewrite those pieces in D or find a library in another language that
+does what you need. You have to link to shared libraries. I had to
+learn how the R internals work in order to build the lowest-level foundation
+for interoperability.
+
+# Data Sharing
+
+The starting point for interoperability is data sharing. I
+needed a way to create, access, and manipulate R data 
+structures from D. I needed to work with data frames, vectors, matrices,
+lists, and so on from my D program, but they had to simultaneously
+be available to R. This was not a trivial undertaking. 
+Three things would be required for this to be practical:
+
+- Allocation of data structures. This is easy. All of R's data structures
+are a single C struct under the hood. You can send a string of code to R
+and then capture the output, which is a pointer, or you can directly call
+functions in libR.so, which do the allocation and return a pointer. The only
+differences in the two approaches are that the latter is faster and the
+former creates a variable inside R that can be passed as an argument to
+R functions.
 - Releasing the data structures to the R garbage collector when they're
 no longer in use. It's easy to *protect* objects from the garbage collector.
 What's more difficult is to recognize when they're no longer needed and
-remove the protection. Failure to unprotect creates a memory leak, and
-unprotecting too soon results in segfaults. I've implemented a reference
-counting approach to handle all of the memory management issues. To my
+remove the protection exactly once. Failure to unprotect creates a memory leak,
+unprotecting too soon results in segfaults, and unprotecting twice kills
+your program. I implemented a reference counting approach to handle all 
+of these memory management issues. To my
 knowledge, all of the bugs have been worked out. It's been a long time
-since I had any issues related to memory.
-- Convenient access to the data from within D. Working out the allocation
+since I had any issues related to memory. I'm currently moving from the
+reference counting system I implemented myself to `SafeRefCounted`. If
+there are any remaining issues I don't know about, transitioning to
+`SafeRefCounted`, which wasn't around when I wrote my reference
+counting code, should fix them.
+- Convenient access to the data from D. Working out the allocation
 and garbage collection for matrix isn't terribly helpful if you still
 need to work with individual elements using pointer arithmetic. It's 
 only sustainable if you have syntax like `m[1,4] = 3.2`, `m[2..6, 0..3] = 4.0`, and
 `m[1,3..$]`. Once you have that, you can build on it with things like
-`Row(m,2) = [3.6, -1.1, -2.4, 4.8]`. Any one of these conveniences 
-doesn't take much time to implement on its own, but there are many of
-them, and comprehensively testing them all is a slow process for a side
-project.
+`Row(m,2) = [3.6, -1.1, -2.4, 4.8]`. These conveniences 
+don't take much time individually, but there are many of
+them, and comprehensively testing all of them and fixing bugs is a slow 
+process for a side project.
+
+# Running R Code and Calling R Functions
+
+Once I had the data sharing under control, I needed a way to tell R what
+to do. The simplest version of this is passing a string of R code to the
+R shared library, having it evaluate the code, and returning a pointer to
+the output (if any). In other cases, you're calling the C functions that
+R calls under the hood, where you pass R data structures as arguments
+and receive an R data structure as the output. Finally, you can call
+R packages that provide an interface to C, C++, or Fortran code directly.
+This is the same as calling C functions, but you have to find and link to
+the shared library for that package, as every R package with compiled code
+has its own shared library.
+
+# Bottlenecks
+
+Although your program is probably going to be more than fast enough out
+of the box, [as I wrote about here](efficiency.html), there will be cases
+in which it's worth your while to speed things up. The leading example
+is a simulation that's repeated many times. Parallel random number generation
+and optimized linear algebra libraries are an essential part of the
+toolbox for simulation. I've done three things to facilitate this:
+
+- Ported one of L'Ecuyer's parallel random number generators from Java to D.
+- Stripped out the random number generators for most of the distributions
+in the GNU Scientific Library and polish them so they can be compiled with
+ImportC.
+- Stripped the matrix library in Gretl into its a standalone library and
+got it compiling with ImportC.
+
+Other optimizations have been implemented. I recommend reading [the discussion here](efficiency.html)
+for more on this topic. If worst comes to worst, you always have the options
+to rewrite bottlenecks in D or to call any available library with a C
+interface. I want to emphasize that this should not usually be necessary.
+You should be able to write your program and not worry about the speed.
+
+# Documentation
+
+This is always tough. It takes a long time to write good documentation.
+
+# I'm Sharing My Work
 
 Please note that I view this as *sharing my work* rather than *releasing a library*. 
-I'm showing you what has worked for me, giving you the details of my 
+I'm showing you what has worked for me, and giving you the details of my 
 workflow, but it's not polished like a well-run open source project. 
 Maybe others will see the value and pitch in. If not, well, I'll 
 continue to use it and update it as I do. I'm largely
-indifferent on adoption, but I would be happy someone else found it
-valuable.
+indifferent on adoption, but I would be happy if someone else found it
+valuable, even if I'm not going to go out of my way to make that happen.
+
+# How Does This Compare To Project X?
+
+There have been many previous efforts on this front. There have been
+statistical libraries and optimization libraries and plotting libraries
+and so on. Mir is an impressive project with some great pieces.
+
+The problem is that none of these is sufficient for the day-to-day work
+of a data analyst. It's too big of a task to write everything from scratch
+in D, and honestly, it's pointless to do so when it's already been written
+for other languages. D programmers have serious problems with NIH syndrome.
+
+This project, in contrast, is a complete solution for the data analyst.
+You get everything that's available in R. You get everything that's available
+in C and Fortran. You get everything that's previously been written in D.
+Whatever you want, you can probably get it with BetterR. That's not
+true for any of these other projects.
 
 # Better R?
 
