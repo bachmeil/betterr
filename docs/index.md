@@ -4,16 +4,16 @@ This project is a collection of the things I've been doing since 2013 that
 connect the D and R languages.[^1] There are also some libraries
 that can be used in cases where efficiency is critical. The intended audience
 is an academic researcher doing the type of data analysis that gets done with
-R, but who has a preference to write their program in D, whether for
+R or Python, but who has a preference to write their program in D, whether for
 speed, static typing, or the nice features of the language. Even though the
 intended audience is academic researchers doing empirical work, it is likely
-to be of interest to anyone doing statistical analysis, and to some
+to be of interest to anyone doing statistical analysis, and to many others
 doing scientific and numerical computing in software such as
 Matlab.[^2] 
 
 The emphasis is on functionality and the speed with which you
 can write correct code. When this conflicts with performance, I've been
-willing to let my programs run 6% longer. I want to minimize the
+willing to let my programs run for a little bit longer. I want to minimize the
 learning curve as much as possible. For instance, one design goal is
 that you don't need to know anything about memory allocation,
 memory management, or garbage collection. As soon as you introduce those
@@ -147,16 +147,16 @@ There have been many previous efforts on this front. There have been
 statistical libraries and optimization libraries and plotting libraries
 and so on. Mir is an impressive project with some great pieces.
 
-The problem is that none of these is sufficient for the day-to-day work
-of a data analyst. It's too big of a task to write everything from scratch
-in D, and honestly, it's pointless to do so when it's already been written
-for other languages. D programmers have serious problems with NIH syndrome.
+The problem with that approach is that there will never be a pure D solution that's remotely suitable for the day-to-day work of a data analyst. It's simply too big of a task to write everything from scratch in D, and honestly, it's pointless to do so. Reusing code written in other languages was never a problem for R, Python, or any other community, so why not do the same thing for D?
 
-This project, in contrast, is a complete solution for the data analyst.
-You get everything that's available in R. You get everything that's available
-in C and Fortran. You get everything that's previously been written in D.
-Whatever you want, you can probably get it with BetterR. That's not
-true for any of these other projects.
+This project intends to provide a complete solution for the data analyst. One of the goals is a convenient, efficient D solution for *any* data analysis you'd want to do. Once you discard the silly objections to calling other languages that are prevalent in the D community (seriously, D even compiles C code!) it's not that big of a task. D can give you access to
+
+- Everything written in D, C, and Fortran.
+- Everything written in/for R (you can treat R as a shared library and call any of its packages).
+- Everything written in Python and Julia (you can reuse the bridges that have been created to work with R).
+- Anything written in C++ that has an R interface, which includes thousands of packages, and since R interfaces are just C interfaces, you can actually reuse that infrastructure to call most C++ libraries.
+
+There are limitations, perhaps, but it would be silly to argue D is not a viable choice for the vast majority of data analysis being done in 2024.
 
 # Better R?
 

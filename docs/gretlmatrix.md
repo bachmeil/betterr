@@ -56,13 +56,152 @@ array.
 
 ### Binary operations
 
-You can do binary operations with `RCMatrix`.
+You can do binary operations with `RCMatrix`:
 
+- `+` and `-` return a new RCMatrix.
+- `*` is matrix multiplication.
+- `/` is matrix division in the sense of Matlab (solves a least squares problem)
 
+### double[] array()
 
+Returns a slice to the data in the matrix. Be aware that this is a reference,
+for speed, and changes to the returned slice will affect the original matrix.
+Use dup if that's not what you want.
 
+```
+auto mm = m.array();
+mm[0] = 2.2; // Changes m[0,0]
+auto mm2 = m.array.dup(); // New allocation plus copy of the data
+mm2[0] = 2.2; // m[0,0] unaffected
+```
 
+### val
 
+Set all elements of the matrix:
 
+```
+m.val = -3.2; // All elements are set to -3.2
+m.val = [1.1, 2.2, 3.3, 4.4]; // Fills by column, m needs to have 4 elements
+```
 
+### ptr
 
+Pointer to the underlying data array. Should rarely be used.
+
+### rows
+
+Returns the number of rows.
+
+### cols
+
+Returns the number of columns.
+
+### length
+
+Returns the total number of elements.
+
+### cov
+
+Returns the covariance matrix for the columns.
+
+### cor
+
+Returns the correlation matrix for the columns.
+
+### shape
+
+Reshapes the matrix to the given dimensions.
+
+### RCMatrix trimRows(long trimTop, long trimBottom)
+
+New matrix after trimming the given numbers of rows from the top and bottom.
+
+### RCMatrix rowMin()
+
+New matrix holding the minimum values of each row.
+
+### RCMatrix rowMax()
+
+New matrix holding the maximum values of each row.
+
+### RCMatrix colMin()
+
+New matrix holding the minimum values of each column.
+
+### RCMatrix colMax()
+
+New matrix holding the maximum values of each column.
+
+### RCMatrix rowMinIndex()
+
+New matrix holding the index of the minimum values of each row.
+
+### RCMatrix rowMaxIndex()
+
+New matrix holding the index of the maximum values of each row.
+
+### RCMatrix colMinIndex()
+
+New matrix holding the index of the minimum values of each column.
+
+### RCMatrix colMaxIndex()
+
+New matrix holding the index of the maximum values of each column.
+
+### double min()
+
+Minimum value of the entire matrix.
+
+### double max()
+
+Maximum value of the entire matrix.
+
+### double sum()
+
+Sum of all elements in the matrix.
+
+### RCMatrix pca(RCMatrix m, long p)
+
+The first p principal components of m.
+
+### RCMatrix selectRows(RCMatrix m, RCMatrix sel)
+
+New matrix holding the rows specified in sel.
+
+### RCMatrix selectColumns(RCMatrix m, RCMatrix sel)
+
+New matrix holding the columns specified in sel.
+
+### RCMatrix sort(RCMatrix m, long col)
+
+Sort m by column col.
+
+### colnames, rownames
+
+You can get and set the column and row names.
+
+### void print(RCMatrix m, string msg="")
+
+Print the matrix m with optional initial message msg.
+
+### RCMatrix inv(RCMatrix m)
+
+Inverse of m.
+
+### double det(RCMatrix m)
+
+Determinant of square matrix m.
+
+### double logdet(RCMatrix m)
+
+Log determinant of m.
+
+### double logabsdet(RCMatrix m)
+
+Log of the absolute value of the determinant.
+
+### RCMatrix solve(RCMatrix m1, RCMatrix m2)
+
+Solve a system of linear equations.
+
+### 
