@@ -392,6 +392,17 @@ struct MTS(long freq) {
 		start = s;
 		end = s;
 	}
+	
+	this(long f)(TS!f[string] values) {
+		auto tmp = MultipleTS!f(values);
+		string[] varnames = values.keys;
+		string[] rnames;
+		foreach(varname; varnames) {
+			rnames ~= values[varname].data.name;
+		}
+		this(`na.omit(cbind(` ~ rnames.join(",") ~ `))`);
+		this.colnames(varnames);
+	}
   
   long asLong(long[2] d) {
     if (frequency != 1) {
