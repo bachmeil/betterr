@@ -34,7 +34,7 @@ void main(string[] args) {
 string[] sourceFiles() {
 	return dirEntries(".", "*.d", SpanMode.shallow)
         .filter!(a => a.isFile)
-        .filter!(a => a != "install.d")
+        .filter!(a => (a != "install.d") && (a != "update.d"))
         .map!((return a) => baseName(a.name))
         .array;
 }

@@ -7,11 +7,9 @@ import betterr.matrix, betterr.vector;
 import std.conv, std.exception, std.math, std.range, std.stdio, std.sumtype;
 import std.algorithm.comparison: max, min;
 import std.algorithm.searching;
+import std.array: join;
 
 struct TS(int freq) {
-  /* The value of _start and _end depend on the frequency. I don't know
-   * if we should require the frequency as a compile-time parameter,
-   * but it does make some things easier. */
   RData data;
   double * ptr;
   int frequency = freq;
@@ -20,73 +18,61 @@ struct TS(int freq) {
   static if(freq == 1) {
 		private long _start;
 		private long _end;
+		
 		long start() {
 			return _start;
 		}
+		
 		long end() {
 			return _end;
 		}
+		
 		void start(long s) {
 			_start = s;
 		}
+		
 		void end(long e) {
 			_end = e;
 		}
+		
 		long longStart() {
 			return _start;
 		}
+		
 		long longEnd() {
 			return _end;
 		}
 	} else {
 		private TimePeriod _start;
 		private TimePeriod _end;
+
 		long[] start() {
 			return _start.array;
 		}
+
 		long[] end() {
 			return _end.array;
 		}
+
 		void start(long[] s) {
 			_start.year = s[0];
 			_start.minor = s[1];
 		}
+
 		void end(long[] e) {
 			_end.year = e[0];
 			_end.minor = e[1];
 		}
+
 		// Shouldn't normally use these, but they're here if you want them
 		long longStart() {
 			return _start.to!long;
 		}
+
 		long longEnd() {
 			return _end.to!long;
 		}
 	}
-
-  //~ long asLong(long[] d) {
-    //~ if (frequency != 1) {
-      //~ return (d[0]-1900)*frequency+(d[1]-1);
-    //~ } else {
-      //~ return d[0];
-    //~ }
-  //~ }
-  
-  //~ long[] fromLong(long d) {
-    //~ return [(d/frequency)+1900, d%frequency+1];
-  //~ }
-  
-  //~ long asLong(long[] d, long f) {
-    //~ if (f != 1) {
-      //~ return (d[0]-1900)*f+(d[1]-1);
-    //~ } else {
-      //~ return d[0];
-    //~ }
-  //~ }
-  
-  //~ long[] fromLong(long d, long f) {
-    //~ return [(d/f)+1900, d%f+1];
-  //~ }
   
   /* To access an existing ts object that's already inside R */
   this(string code) {
@@ -133,36 +119,10 @@ struct TS(int freq) {
 		this(T)(T v, long[] s) 
 		if (__traits(hasMember, v, "data") && 
 		(is(typeof(__traits(getMember, v, "data")) == RData))) {
-			//~ data = RData("ts(" ~ v.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
-				//~ ~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
-			//~ ptr = REAL(data.x);
-			//~ _start = TimePeriod(freq);
-			//~ _end = TimePeriod(freq);
-			//~ _start = s;
-			//~ _end = _start + (data.x.length-1);
 			this(v.name, s);
 		}
 	}
 
-  /* Slicing is done using dates rather than observations, which wouldn't
-   * really make a lot of sense. */
-  //~ this(T)(T obj, long _start) {
-    //~ data = RData("ts(" ~ obj.name ~ ", start=" ~ _start.to!int ~ ", frequency=1)");
-    //~ ptr = REAL(data.x);
-    //~ frequency = 1;
-    //~ start = _start;
-    //~ end = _start+obj.length-1;
-  //~ }
-  
-  //~ this(T)(T obj, long[2] _start) {
-    //~ data = RData("ts(" ~ obj.name ~ ", start=c(" ~ _start[0].to!string ~ ", " 
-      //~ ~ _start[1].to!string ~ "), frequency=" ~ _frequency.to!string ~ ")");
-    //~ ptr = REAL(data.x);
-    //~ frequency = _frequency;
-    //~ start = asLong(_start);
-    //~ end = start+data.x.length;
-  //~ }
-  
   bool notBefore(long[] x, long[] y) {
     if (x[0] > y[0]) {
       return true;
@@ -367,17 +327,52 @@ struct TimePeriod {
 	}
 }
 
-struct MTS {
+/* Convenient way to collect multiple time series, pass them around, and
+ * print them out. */
+struct MultipleTS(long freq) {
+	TS!freq[string] series;
+	alias series this;
+	
+	this(long f)(TS!f[string] values) {
+		series = values;
+	}
+	
+	MTS!f opIndex(long f=freq)(string[] varnames) {
+		string[] rnames;
+		foreach(varname; varnames) {
+			rnames ~= series[varname].data.name;
+		}
+		auto result = MTS!freq(`na.omit(cbind(` ~ rnames.join(",") ~ `))`);
+		result.colnames = varnames;
+		return result;
+	}
+	
+	MTS!f opIndex(long f=freq)(string[] varnames...) {
+		if (varnames.length == 0) {
+			return opIndex(series.keys);
+		} else {
+			return opIndex(varnames);
+		}
+	}
+	
+	void opIndexAssign(TS!freq value, string name) {
+		series[name] = value;
+	}
+	
+	MTS!freq opCast(T: MTS!freq)() const {
+		return opSlice();
+	}
+}
+
+struct MTS(long freq) {
 	RData data;
   long start;
   long end;
-  long frequency;
+  long frequency = freq;
   double * ptr;
   string[] names;
   alias data this;
   
-  /* In the future, make this a TS[string] to make printing sensible */
-    
   this(string code) {
     data = RData(code);
     ptr = REAL(data.x);
@@ -426,10 +421,21 @@ struct MTS {
   
   // Return a reference to that TS's data
   double[] array(string name) {
-		auto index = names.countUntil!"a == name";
+		auto index = countUntil!"a == b"(names, name);
 		enforce(index >= 0, "Variable name not found");
 		long length = end-start+1;
 		return ptr[index*length..index*(length+1)];
+	}
+
+	void colnames(string[] newnames) {
+		string[] quotedNames;
+		foreach(n; newnames) {
+			names ~= n;
+			quotedNames ~= `"` ~ n ~ `"`;
+		}
+		evalR(`colnames(` ~ data.name ~ `) <- c(` ~ quotedNames.join(", ") ~ `)`);
+		// Changing the names can change the pointer
+		data.update();
 	}
   
   void print(string msg="") {
@@ -448,328 +454,327 @@ struct MTS {
     printR(data.x);
   }
 }
-	
 
-MTS combine(long f)(TS!f[] series) {
+MTS!f combine(long f)(TS!f[] series) {
 	enforce(series.length > 1, "tsCombine requires multiple time series");
-	MTS result;
+	MTS!f result;
 	evalRQ(`..tmp <- ` ~ series[0].data.name);
 	foreach(var; series[1..$]) {
 		evalRQ(`..tmp <- cbind(..tmp, ` ~ var.data.name ~ `)`);
 	}
 	evalRQ(`..tmp <- na.omit(..tmp)`);
 	evalRQ(`colnames(..tmp) <- paste0("V", 1:ncol(..tmp))`);
-	return MTS(`..tmp`);
+	return MTS!f(`..tmp`);
 }
 		
-struct MTSTransform {
-	/* This struct will be used to hold info on transformations to make
-	 * to the elements of a MTS struct. The purpose is mainly efficiency,
-	 * because you need only to specify the dataset, and then one matrix
-	 * is allocated, and it's filled one time, using the information about
-	 * the transformation. */
-	 TSTransform[] data;
-	 long start;
-	 long end;
-	 long nrow;
-	 /* You need to set this if you specified a name for the variable
-	  * rather than a TS. */
-	 MTS sourceData;
+//~ struct MTSTransform {
+	//~ /* This struct will be used to hold info on transformations to make
+	 //~ * to the elements of a MTS struct. The purpose is mainly efficiency,
+	 //~ * because you need only to specify the dataset, and then one matrix
+	 //~ * is allocated, and it's filled one time, using the information about
+	 //~ * the transformation. */
+	 //~ TSTransform[] data;
+	 //~ long start;
+	 //~ long end;
+	 //~ long nrow;
+	 //~ /* You need to set this if you specified a name for the variable
+	  //~ * rather than a TS. */
+	 //~ MTS sourceData;
 	 
-	 MTS create() {
-		 start = long.min;
-		 end = long.max;
-		 foreach(var; data) {
-			 var.modStart.match!(
-				 (long delegate(MTS) s) => start = max(start, s(sourceData)),
-				 (long s) => start = max(start, s));
-			 var.modEnd.match!(
-				 (long delegate(MTS) e) => end = min(end, e(sourceData)),
-				 (long e) => end = min(end, e));
-		 }
-		 auto result = MTS(data.length, start, end);
-		 nrow = end - start + 1;
-		 foreach(ii, var; data) {
-			 auto tmp = result.ptr[ii*nrow..(ii+1)*nrow];
-			 var.compute.match!(
-				 (DelayedTSTransform f) => f(sourceData, tmp, start, end),
-				 (ImmediateTSTransform g) => g(tmp, start, end));
-		 }
-		 return result;
-	 }
-}
+	 //~ MTS create() {
+		 //~ start = long.min;
+		 //~ end = long.max;
+		 //~ foreach(var; data) {
+			 //~ var.modStart.match!(
+				 //~ (long delegate(MTS) s) => start = max(start, s(sourceData)),
+				 //~ (long s) => start = max(start, s));
+			 //~ var.modEnd.match!(
+				 //~ (long delegate(MTS) e) => end = min(end, e(sourceData)),
+				 //~ (long e) => end = min(end, e));
+		 //~ }
+		 //~ auto result = MTS(data.length, start, end);
+		 //~ nrow = end - start + 1;
+		 //~ foreach(ii, var; data) {
+			 //~ auto tmp = result.ptr[ii*nrow..(ii+1)*nrow];
+			 //~ var.compute.match!(
+				 //~ (DelayedTSTransform f) => f(sourceData, tmp, start, end),
+				 //~ (ImmediateTSTransform g) => g(tmp, start, end));
+		 //~ }
+		 //~ return result;
+	 //~ }
+//~ }
 
-// This verbose stuff is not something the user should ever need to write out
-alias DelayedTSTransform = void delegate(MTS, ref double[], long, long);
-alias ImmediateTSTransform = void delegate(ref double[], long, long);
-alias TSTransformFunction = SumType!(DelayedTSTransform, ImmediateTSTransform);
-alias TSTransformDate = SumType!(long delegate(MTS), long);
-struct TSTransform {
-	TSTransformFunction compute;
-	/* First non-missing observation available for the transformed series */
-	TSTransformDate modStart;
-	/* Last non-missing observation available for the transformed series */
-	TSTransformDate modEnd;
+//~ // This verbose stuff is not something the user should ever need to write out
+//~ alias DelayedTSTransform = void delegate(MTS, ref double[], long, long);
+//~ alias ImmediateTSTransform = void delegate(ref double[], long, long);
+//~ alias TSTransformFunction = SumType!(DelayedTSTransform, ImmediateTSTransform);
+//~ alias TSTransformDate = SumType!(long delegate(MTS), long);
+//~ struct TSTransform {
+	//~ TSTransformFunction compute;
+	//~ /* First non-missing observation available for the transformed series */
+	//~ TSTransformDate modStart;
+	//~ /* Last non-missing observation available for the transformed series */
+	//~ TSTransformDate modEnd;
 	
-	this(T1, T2)(T1 fn, T2 s, T2 e) {
-		compute = fn;
-		modStart = s;
-		modEnd = e;
-	}
-}
+	//~ this(T1, T2)(T1 fn, T2 s, T2 e) {
+		//~ compute = fn;
+		//~ modStart = s;
+		//~ modEnd = e;
+	//~ }
+//~ }
 
-TSTransform Lag(long f)(TS!f var, long k=1) {
-	double[] source = var.array;
-	long arrayStart = var.longStart;
-	long arrayEnd = var.longEnd;
+//~ TSTransform Lag(long f)(TS!f var, long k=1) {
+	//~ double[] source = var.array;
+	//~ long arrayStart = var.longStart;
+	//~ long arrayEnd = var.longEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(ref double[] target, long s, long e) {
-		/* s-k is the date of the lag of the first observation after
-		 * transformation.
-		 * Then we subtract arrayStart to get the index inside source.
-		 * Do the same through e+1 (since e+1 is not included). */
-		target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(ref double[] target, long s, long e) {
+		//~ /* s-k is the date of the lag of the first observation after
+		 //~ * transformation.
+		 //~ * Then we subtract arrayStart to get the index inside source.
+		 //~ * Do the same through e+1 (since e+1 is not included). */
+		//~ target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
+	//~ }
 	
-	return TSTransform(&compute, arrayStart+k, arrayEnd+k);
-}
+	//~ return TSTransform(&compute, arrayStart+k, arrayEnd+k);
+//~ }
 
-TSTransform Lag(string varname, long k=1) {
-	double[] source;
-	long arrayStart;
-	long arrayEnd;
+//~ TSTransform Lag(string varname, long k=1) {
+	//~ double[] source;
+	//~ long arrayStart;
+	//~ long arrayEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(MTS x, ref double[] target, long s, long e) {
-		arrayStart = x.start;
-		arrayEnd = x.end;
-		source = x.array(varname);
-		/* s-k is the date of the lag of the first observation after
-		 * transformation.
-		 * Then we subtract arrayStart to get the index inside source.
-		 * Do the same through e+1 (since e+1 is not included). */
-		target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(MTS x, ref double[] target, long s, long e) {
+		//~ arrayStart = x.start;
+		//~ arrayEnd = x.end;
+		//~ source = x.array(varname);
+		//~ /* s-k is the date of the lag of the first observation after
+		 //~ * transformation.
+		 //~ * Then we subtract arrayStart to get the index inside source.
+		 //~ * Do the same through e+1 (since e+1 is not included). */
+		//~ target[0..$] = source[(s-k-arrayStart)..(e+1-k-arrayStart)];
+	//~ }
 	
-	long modStart(MTS x) {
-		return x.start+k;
-	}
+	//~ long modStart(MTS x) {
+		//~ return x.start+k;
+	//~ }
 	
-	long modEnd(MTS x) {
-		return x.end+k;
-	}
+	//~ long modEnd(MTS x) {
+		//~ return x.end+k;
+	//~ }
 	
-	return TSTransform(&compute, &modStart, &modEnd);
-}
+	//~ return TSTransform(&compute, &modStart, &modEnd);
+//~ }
 
-// Last is included
-TSTransform[] Lags(long f)(TS!f var, long from, long to) {
-	TSTransform[] result;
-	foreach(k; from..(to+1)) {
-		result ~= Lag(var, k);
-	}
-	return result;
-}
+//~ // Last is included
+//~ TSTransform[] Lags(long f)(TS!f var, long from, long to) {
+	//~ TSTransform[] result;
+	//~ foreach(k; from..(to+1)) {
+		//~ result ~= Lag(var, k);
+	//~ }
+	//~ return result;
+//~ }
 
-TSTransform[] Lags(long f)(TS!f var, long[] lags) {
-	TSTransform[] result;
-	foreach(k; lags) {
-		result ~= Lag(var, k);
-	}
-	return result;
-}
+//~ TSTransform[] Lags(long f)(TS!f var, long[] lags) {
+	//~ TSTransform[] result;
+	//~ foreach(k; lags) {
+		//~ result ~= Lag(var, k);
+	//~ }
+	//~ return result;
+//~ }
 
-TSTransform Lead(long f)(TS!f var, long k=1) {
-	return Lag(var, -k);
-}
+//~ TSTransform Lead(long f)(TS!f var, long k=1) {
+	//~ return Lag(var, -k);
+//~ }
 
-TSTransform Lead(string varname, long k=1) {
-	return Lag(varname, -k);
-}
+//~ TSTransform Lead(string varname, long k=1) {
+	//~ return Lag(varname, -k);
+//~ }
 
-TSTransform Diff(long f)(TS!f var, long k=1) {
-	double[] source = var.array;
-	long arrayStart = var.longStart;
-	long arrayEnd = var.longEnd;
+//~ TSTransform Diff(long f)(TS!f var, long k=1) {
+	//~ double[] source = var.array;
+	//~ long arrayStart = var.longStart;
+	//~ long arrayEnd = var.longEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(ref double[] target, long s, long e) {
-		foreach(d; s..(e+1)) {
-			target[d-s] = source[d-arrayStart] - source[d-arrayStart-k];
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(ref double[] target, long s, long e) {
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = source[d-arrayStart] - source[d-arrayStart-k];
+		//~ }
+	//~ }
 	
-	return TSTransform(&compute, arrayStart+k, arrayEnd);
-}
+	//~ return TSTransform(&compute, arrayStart+k, arrayEnd);
+//~ }
 
-TSTransform Diff(string varname, long k=1) {
-	double[] source;
-	long arrayStart;
-	long arrayEnd;
+//~ TSTransform Diff(string varname, long k=1) {
+	//~ double[] source;
+	//~ long arrayStart;
+	//~ long arrayEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(MTS x, ref double[] target, long s, long e) {
-		arrayStart = x.start;
-		arrayEnd = x.end;
-		source = x.array(varname);
-		foreach(d; s..(e+1)) {
-			target[d-s] = source[d-arrayStart] - source[d-arrayStart-k];
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(MTS x, ref double[] target, long s, long e) {
+		//~ arrayStart = x.start;
+		//~ arrayEnd = x.end;
+		//~ source = x.array(varname);
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = source[d-arrayStart] - source[d-arrayStart-k];
+		//~ }
+	//~ }
 	
-	long modStart(MTS x) {
-		return x.start+k;
-	}
+	//~ long modStart(MTS x) {
+		//~ return x.start+k;
+	//~ }
 	
-	long modEnd(MTS x) {
-		return x.end+k;
-	}
+	//~ long modEnd(MTS x) {
+		//~ return x.end+k;
+	//~ }
 	
-	return TSTransform(&compute, &modStart, &modEnd);
-}
+	//~ return TSTransform(&compute, &modStart, &modEnd);
+//~ }
 
-TSTransform PctChange(long f)(TS!f var, long k=1) {
-	double[] source = var.array;
-	long arrayStart = var.longStart;
-	long arrayEnd = var.longEnd;
+//~ TSTransform PctChange(long f)(TS!f var, long k=1) {
+	//~ double[] source = var.array;
+	//~ long arrayStart = var.longStart;
+	//~ long arrayEnd = var.longEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(ref double[] target, long s, long e) {
-		foreach(d; s..(e+1)) {
-			target[d-s] = (source[d-arrayStart] - source[d-arrayStart-k])/source[d-arrayStart-k];
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(ref double[] target, long s, long e) {
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = (source[d-arrayStart] - source[d-arrayStart-k])/source[d-arrayStart-k];
+		//~ }
+	//~ }
 	
-	return TSTransform(&compute, arrayStart+k, arrayEnd);
-}
+	//~ return TSTransform(&compute, arrayStart+k, arrayEnd);
+//~ }
 
-TSTransform PctChange(string varname, long k=1) {
-	double[] source;
-	long arrayStart;
-	long arrayEnd;
+//~ TSTransform PctChange(string varname, long k=1) {
+	//~ double[] source;
+	//~ long arrayStart;
+	//~ long arrayEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(MTS x, ref double[] target, long s, long e) {
-		arrayStart = x.start;
-		arrayEnd = x.end;
-		source = x.array(varname);
-		foreach(d; s..(e+1)) {
-			target[d-s] = (source[d-arrayStart] - source[d-arrayStart-k])/source[d-arrayStart-k];
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(MTS x, ref double[] target, long s, long e) {
+		//~ arrayStart = x.start;
+		//~ arrayEnd = x.end;
+		//~ source = x.array(varname);
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = (source[d-arrayStart] - source[d-arrayStart-k])/source[d-arrayStart-k];
+		//~ }
+	//~ }
 	
-	long modStart(MTS x) {
-		return x.start+k;
-	}
+	//~ long modStart(MTS x) {
+		//~ return x.start+k;
+	//~ }
 	
-	long modEnd(MTS x) {
-		return x.end+k;
-	}
+	//~ long modEnd(MTS x) {
+		//~ return x.end+k;
+	//~ }
 	
-	return TSTransform(&compute, &modStart, &modEnd);
-}
+	//~ return TSTransform(&compute, &modStart, &modEnd);
+//~ }
 
-TSTransform LogDiff(long f)(TS!f var, long k=1) {
-	double[] source = var.array;
-	long arrayStart = var.longStart;
-	long arrayEnd = var.longEnd;
+//~ TSTransform LogDiff(long f)(TS!f var, long k=1) {
+	//~ double[] source = var.array;
+	//~ long arrayStart = var.longStart;
+	//~ long arrayEnd = var.longEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(ref double[] target, long s, long e) {
-		foreach(d; s..(e+1)) {
-			target[d-s] = log(source[d-arrayStart]) - log(source[d-arrayStart-k]);
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(ref double[] target, long s, long e) {
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = log(source[d-arrayStart]) - log(source[d-arrayStart-k]);
+		//~ }
+	//~ }
 	
-	return TSTransform(&compute, arrayStart+k, arrayEnd);
-}
+	//~ return TSTransform(&compute, arrayStart+k, arrayEnd);
+//~ }
 
-TSTransform LogDiff(string varname, long k=1) {
-	double[] source;
-	long arrayStart;
-	long arrayEnd;
+//~ TSTransform LogDiff(string varname, long k=1) {
+	//~ double[] source;
+	//~ long arrayStart;
+	//~ long arrayEnd;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(MTS x, ref double[] target, long s, long e) {
-		arrayStart = x.start;
-		arrayEnd = x.end;
-		source = x.array(varname);
-		foreach(d; s..(e+1)) {
-			target[d-s] = log(source[d-arrayStart]) - log(source[d-arrayStart-k]);
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(MTS x, ref double[] target, long s, long e) {
+		//~ arrayStart = x.start;
+		//~ arrayEnd = x.end;
+		//~ source = x.array(varname);
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = log(source[d-arrayStart]) - log(source[d-arrayStart-k]);
+		//~ }
+	//~ }
 	
-	long modStart(MTS x) {
-		return x.start+k;
-	}
+	//~ long modStart(MTS x) {
+		//~ return x.start+k;
+	//~ }
 	
-	long modEnd(MTS x) {
-		return x.end+k;
-	}
+	//~ long modEnd(MTS x) {
+		//~ return x.end+k;
+	//~ }
 	
-	return TSTransform(&compute, &modStart, &modEnd);
-}
+	//~ return TSTransform(&compute, &modStart, &modEnd);
+//~ }
 
-TSTransform vectorFunction(alias fn, long f)(TS!f var) {
-	double[] source = var.array;
+//~ TSTransform vectorFunction(alias fn, long f)(TS!f var) {
+	//~ double[] source = var.array;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(ref double[] target, long s, long e) {
-		foreach(d; s..(e+1)) {
-			target[d-s] = fn(source[d-var.longStart]);
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(ref double[] target, long s, long e) {
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = fn(source[d-var.longStart]);
+		//~ }
+	//~ }
 	
-	return TSTransform(&compute, var.longStart, var.longEnd);
-}
+	//~ return TSTransform(&compute, var.longStart, var.longEnd);
+//~ }
 
-TSTransform vectorFunction(alias fn)(string varname) {
-	double[] source;
-	long arrayStart;
+//~ TSTransform vectorFunction(alias fn)(string varname) {
+	//~ double[] source;
+	//~ long arrayStart;
 	
-	/* Guaranteed all elements from s to e can be computed */
-	void compute(MTS x, ref double[] target, long s, long e) {
-		source = x.array(varname);
-		arrayStart = x.start;
-		foreach(d; s..(e+1)) {
-			target[d-s] = fn(source[d-arrayStart]);
-		}
-	}
+	//~ /* Guaranteed all elements from s to e can be computed */
+	//~ void compute(MTS x, ref double[] target, long s, long e) {
+		//~ source = x.array(varname);
+		//~ arrayStart = x.start;
+		//~ foreach(d; s..(e+1)) {
+			//~ target[d-s] = fn(source[d-arrayStart]);
+		//~ }
+	//~ }
 	
-	long modStart(MTS x) {
-		return x.start;
-	}
+	//~ long modStart(MTS x) {
+		//~ return x.start;
+	//~ }
 	
-	long modEnd(MTS x) {
-		return x.end;
-	}
+	//~ long modEnd(MTS x) {
+		//~ return x.end;
+	//~ }
 
-	return TSTransform(&compute, &modStart, &modEnd);
-}
+	//~ return TSTransform(&compute, &modStart, &modEnd);
+//~ }
 
-TSTransform Log(long f)(TS!f var) {
-	return vectorFunction!std.math.log(var);
-}
+//~ TSTransform Log(long f)(TS!f var) {
+	//~ return vectorFunction!std.math.log(var);
+//~ }
 
-TSTransform Log(string varname) {
-	return vectorFunction!(std.math.log)(varname);
-}
+//~ TSTransform Log(string varname) {
+	//~ return vectorFunction!(std.math.log)(varname);
+//~ }
 
-TSTransform Trend(long k=1) {
-	void compute(ref double[] target, long s, long e) {
-		foreach(ii; 1..(target.length+1)) {
-			target[ii] = ii^^k;
-		}
-	}
+//~ TSTransform Trend(long k=1) {
+	//~ void compute(ref double[] target, long s, long e) {
+		//~ foreach(ii; 1..(target.length+1)) {
+			//~ target[ii] = ii^^k;
+		//~ }
+	//~ }
 	
-	return TSTransform(&compute, long.min, long.max);
-}
+	//~ return TSTransform(&compute, long.min, long.max);
+//~ }
 
-TSTransform[] PolyTrend(long k=1) {
-	TSTransform[] result;
-	foreach(ii; 1..(k+1)) {
-		result ~= Trend(ii);
-	}
-	return result;
-}
+//~ TSTransform[] PolyTrend(long k=1) {
+	//~ TSTransform[] result;
+	//~ foreach(ii; 1..(k+1)) {
+		//~ result ~= Trend(ii);
+	//~ }
+	//~ return result;
+//~ }

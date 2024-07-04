@@ -1,8 +1,20 @@
-# TS
+# Warning
 
-**Warning:** This module is still considered experimental. The documentation in this file may be inaccurate and incomplete.
+This is an experimental module. What's here will (probably) work correctly, but it's all subject to breaking changes as I decide what works best for my use cases, so you should expect that any code you write now will fail to compile in the future. You can avoid issues by storing a copy of this file in the project directory with the rest of your source files. Also, there's no guarantee that this documentation will be accurate or complete while I'm designing the module. In some cases I write documentation before a feature has been added.
 
-This struct is for holding a single time series. It's a vector, but it also stores metadata on the frequency and the dates covered.
+# struct TS
+
+This struct holds a single time series. Although the underlying data is stored as a vector, it's required to know the start date, end data, and frequency properties. If you don't have all that information, the time series is not fully defined, and there were will be some operations you can't do. For instance, taking the mean of a single time series requires only the vector of data, but taking the lag is only meaningful if you know the frequency and start date. The data array is the same for both the series and its lags. What changes is the interpretation of the dates attached to observations. Operations like summing time series only make sense if they are the same frequency and cover the same dates.
+
+Since the frequency is required, it's a required template parameter. There is currently support for the three frequencies I use most often:
+
+- Annual: `TS!1` or `AnnualTS`
+- Quarterly: `TS!4` or `QuarterlyTS`
+- Monthly: `TS!12` or `MonthlyTS`
+
+Other frequencies will be supported in the future using the facilities provided by R. One thing to note about these frequencies is that the type of the date depends on the frequency. An annual time series has an integer date such as 2014. Quarterly and monthly time series have dates that are two integers, one for the year and one for the minor item, so that January 2014 and 2014Q1 are represented by the date [2014,1].
+
+Indexing of time series is done by date. For an annual time series, y[2014] is the observation corresponding to 2014, not element number 2014. For a monthly time series, y[2014, 1] is the observation corresponding to January 2014. Similarly, slicing is done by dates. An annual time series would be sliced using y[2014..2023]. A quarterly time series would be sliced using y[[2014,1]..[2023,4]]. If for some reason you actually want to work with the data array, you're discarding the time series properties, and the efficient way to do that is to call y.array, which returns a double[] with no allocation or copying of data.
 
 # Construction
 
