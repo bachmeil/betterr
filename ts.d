@@ -360,7 +360,11 @@ struct MultipleTS(long freq) {
 	}
 	
 	MTS!freq opCast(T: MTS!freq)() const {
-		return opSlice();
+		return opIndex(series.keys);
+	}
+
+	void print(string msg="") {
+		opIndex!freq(series.keys).print(msg);
 	}
 }
 
@@ -403,6 +407,19 @@ struct MTS(long freq) {
 		this(`na.omit(cbind(` ~ rnames.join(",") ~ `))`);
 		this.colnames(varnames);
 	}
+	
+	/* Sometimes you don't care about the names. For instance when doing a
+	 * regression with control variables. */
+	this(long f)(TS!f[] values) {
+		string[] varnames;
+		string[] rnames;
+		foreach(ii, value; values) {
+			rnames ~= value.data.name;
+			varnames ~= "V" ~ to!string(ii+1);
+		}
+		this(`na.omit(cbind(` ~ rnames.join(",") ~ `))`);
+		this.colnames(varnames);
+	}
   
   long asLong(long[2] d) {
     if (frequency != 1) {
@@ -428,7 +445,13 @@ struct MTS(long freq) {
     return [(d/f)+1900, d%f+1];
   }
   
-  // opIndex(string)
+  TS!f opIndex(long f=freq)(string varname) {
+		return TS!freq(data.name ~ `[,"` ~ varname ~ `"]`);
+	}
+  
+  auto opIndex(long ind) {
+		return TS!freq(data.name ~ `[,` ~ to!string(ind+1) ~ `]`);
+	}
   
   // Return a reference to that TS's data
   double[] array(string name) {
@@ -466,17 +489,17 @@ struct MTS(long freq) {
   }
 }
 
-MTS!f combine(long f)(TS!f[] series) {
-	enforce(series.length > 1, "tsCombine requires multiple time series");
-	MTS!f result;
-	evalRQ(`..tmp <- ` ~ series[0].data.name);
-	foreach(var; series[1..$]) {
-		evalRQ(`..tmp <- cbind(..tmp, ` ~ var.data.name ~ `)`);
-	}
-	evalRQ(`..tmp <- na.omit(..tmp)`);
-	evalRQ(`colnames(..tmp) <- paste0("V", 1:ncol(..tmp))`);
-	return MTS!f(`..tmp`);
-}
+//~ MTS!f combine(long f)(TS!f[] series) {
+	//~ enforce(series.length > 1, "tsCombine requires multiple time series");
+	//~ MTS!f result;
+	//~ evalRQ(`..tmp <- ` ~ series[0].data.name);
+	//~ foreach(var; series[1..$]) {
+		//~ evalRQ(`..tmp <- cbind(..tmp, ` ~ var.data.name ~ `)`);
+	//~ }
+	//~ evalRQ(`..tmp <- na.omit(..tmp)`);
+	//~ evalRQ(`colnames(..tmp) <- paste0("V", 1:ncol(..tmp))`);
+	//~ return MTS!f(`..tmp`);
+//~ }
 		
 //~ struct MTSTransform {
 	//~ /* This struct will be used to hold info on transformations to make

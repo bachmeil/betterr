@@ -1,44 +1,41 @@
 import betterr.ts, betterr.random, betterr.matrix, betterr.vector;
 import betterr.r;
-import std.stdio;
+import std.conv, std.stdio;
 
 void main() {
   startR();
   
-  auto ts = TS!(12)(rnorm(120), [1990, 4]);
-  ts.print("ts");
-  writeln(ts.frequency);
-  
+  auto ts = TS!12(rnorm(120), [1990, 4]);
   auto ts2 = ts.lag(2);
-  ts2.print("Second lag of ts");
+  MultipleTS!12 mts;
+  mts["y"] = ts;
+  mts["x"] = ts2;
+  auto mts2 = mts[];
+  mts2.print("Both series");
   
-  auto tp = TimePeriod(2012, 1, 12);
-  writeln(tp - 12);
-  writeln(tp + 12);
-  writeln(tp - 5);
-  writeln(tp + 60);
-  writeln(tp + 59);
-  writeln(tp + 58);
-  writeln(tp + 61);
-  writeln(tp + 62);
+  auto mts3 = MultipleTS!12(["y": ts, "x": ts2]);
+  mts3[].print("Both series again");
   
-  MTSTransform tr;
-  tr.data = [Lag(ts, 1), Lag(ts, 2)];
-  auto newts = tr.create();
-	newts.data.print("newts");
-  //~ writeln(tp + (-1));
-  //~ ts.lag(3).print("Third lag");
-  //~ ts.lead(1).print("First lead");
-  //~ ts.diff(2).print("Time 2 difference");
-  //~ ts.pct(1).print("Percent change");
+  auto mts4 = MTS!12(["y": ts, "x": ts2]);
+  mts4.print("And again");
   
-  //~ writeln(ts2[1995,3]);
-  //~ writeln(ts2[[1995,3]..[1998,1]]);
-  //~ writeln(ts2.until([1995, 3]));
-  //~ writeln(ts2.starting([1995, 3]));
+  MTS!12 mts5 = ["y": ts, "x": ts2];
+  mts5.print("And yet again");
   
-  //~ MTS multiple = tsCombine([ts, ts2]);
-  //~ multiple.print("Combining ts and ts2");
+  MultipleTS!12 mts6 = ["y": ts, "x": ts2];
+  writeln("One more time: ", mts6);
+  
+  mts6.to!(MTS!12).print("Another time");
+  
+  // Don't worry about the names
+  // Just create a MTS struct with the data
+  MTS!12 mts7 = [ts, ts2];
+  mts7.print("Without providing names");
+  
+  mts5["y"].print("y value");
+  mts5[0].print("y value by index");
+  writeln(mts5.names);
+  writeln(mts6.keys);
   
   closeR();
 }
