@@ -3,7 +3,7 @@
  * Sequential generation should be faster if you're only running one process,
  * as will be the case if you're interacting with R.
  * Parallel generation is done using L'Ecuyer's code ported from Java.
- * ImportC is used to compile the C headers for GSL.
+ * ImportC is used to compile the modified C files from the GSL.
  */
 import gslheaders, prng;
 import std.parallelism, std.stdio;

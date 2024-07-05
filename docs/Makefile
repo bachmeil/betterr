@@ -33,3 +33,4 @@ doc:
 	pandoc -s improve.md -o improve.html --template=template.html
 	pandoc -s numerical.md -o numerical.html --template=template.html
 	pandoc -s gslrng.md -o gslrng.html --template=template.html
+	pandoc -s importc.md -o importc.html --template=template.html
