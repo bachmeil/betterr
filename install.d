@@ -12,7 +12,7 @@
  * 
  * ldmd2 -i file.d
  * 
- * (Note that I don't use Dub to build my programs.) To updata your
+ * (Note that I don't use Dub to build my programs.) To update your
  * installation, use the update.d script instead. This is for the
  * creation of a new betterr project.
  * 
