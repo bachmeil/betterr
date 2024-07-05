@@ -2,7 +2,7 @@
  * changes. */
 module betterr.array;
 import betterr.rdata;
-import betterr.r;
+import betterr.r, betterr.list;
 import betterr.matrix, betterr.vector;
 import std.conv, std.exception, std.math, std.range, std.stdio, std.sumtype;
 import std.algorithm.comparison: max, min;
@@ -370,8 +370,13 @@ struct MultipleTS(long freq) {
 
 struct MTS(long freq) {
 	RData data;
-  long start;
-  long end;
+  static if (freq == 1) {
+    long start;
+    long end;
+  } else {
+    long[] start;
+    long[] end;
+  }
   long frequency = freq;
   double * ptr;
   string[] names;
@@ -381,21 +386,26 @@ struct MTS(long freq) {
     data = RData(code);
     ptr = REAL(data.x);
     frequency = INTEGER(evalR("as.integer(frequency(" ~ data.name ~ "))"))[0];
-    auto tmp = IntVector("as.integer(start(" ~ data.name ~ "))");
-    start = asLong([tmp[0], tmp[1]], frequency);
-    tmp = IntVector("as.integer(end(" ~ data.name ~ "))");
-    end = asLong([tmp[0], tmp[1]], frequency);
+    auto s = IntVector("as.integer(start(" ~ data.name ~ "))");
+    auto e = IntVector("as.integer(end(" ~ data.name ~ "))");
+    static if (freq == 1) {
+      start = s[0];
+      end = e[0];
+    } else {
+      start = [s[0], s[1]];
+      end = [e[0], e[1]];
+    }
   }  
   
-  this(long ncol, long s, long e) {
-		writeln("e: ", e);
-		writeln("s: ", s);
-		string code = "ts(matrix(0.0, nrow=" ~ to!string(e-s+1) ~ ", ncol=" ~ to!string(ncol) ~ "), start=" ~ to!string(s) ~ ")";
-		data = RData(code);
-		ptr = REAL(data.x);
-		start = s;
-		end = s;
-	}
+  static if (freq == 1) {
+    this(long ncol, long s, long e) {
+      string code = "ts(matrix(0.0, nrow=" ~ to!string(e-s+1) ~ ", ncol=" ~ to!string(ncol) ~ "), start=" ~ to!string(s) ~ ")";
+      data = RData(code);
+      ptr = REAL(data.x);
+      start = s;
+      end = s;
+    }
+  }
 	
 	this(long f)(TS!f[string] values) {
 		auto tmp = MultipleTS!f(values);
@@ -421,6 +431,10 @@ struct MTS(long freq) {
 		this.colnames(varnames);
 	}
   
+  this(long f)(TS!f[] values...) {
+    this(values);
+  }
+  
   long asLong(long[2] d) {
     if (frequency != 1) {
       return (d[0]-1900)*frequency+(d[1]-1);
@@ -433,7 +447,7 @@ struct MTS(long freq) {
     return [(d/frequency)+1900, d%frequency+1];
   }
   
-  long asLong(long[2] d, long f) {
+  long asLong(long[] d, long f) {
     if (f != 1) {
       return (d[0]-1900)*f+(d[1]-1);
     } else {
@@ -457,7 +471,11 @@ struct MTS(long freq) {
   double[] array(string name) {
 		auto index = countUntil!"a == b"(names, name);
 		enforce(index >= 0, "Variable name not found");
-		long length = end-start+1;
+    static if (freq == 1) {
+      long length = end-start+1;
+    } else {
+      long length = asLong(end, freq) - asLong(start, freq) + 1;
+    }
 		return ptr[index*length..index*(length+1)];
 	}
 
@@ -476,14 +494,9 @@ struct MTS(long freq) {
     if (msg.length > 0) {
       writeln("--------\n", msg, "\n--------");
     }
-    if (frequency == 1) {
-      writeln("\nStart: ", start);
-      writeln("End: ", end);
-    } else {
-      writeln("\nStart: ", fromLong(start));
-      writeln("End: ", fromLong(end));
-    }
     writeln("Frequency: ", frequency);
+    writeln("\nStart: ", start);
+    writeln("End: ", end);
     writeln();
     printR(data.x);
   }
@@ -812,3 +825,107 @@ struct MTS(long freq) {
 	//~ }
 	//~ return result;
 //~ }
+
+/* This stuff will be moved to its own module sometime, but not today. */
+alias TSObservation = SumType!(long, long[]);
+
+struct TSFit {
+  List fit;
+  List summary;
+  TSObservation start;
+  TSObservation end;
+  long frequency;
+
+	void print(string msg="") {
+		if (msg.length > 0) {
+			writeln(msg ~ ":");
+		}
+		printR(fit.x);
+	}
+  
+  Vector beta() {
+		return Vector(fit["coefficients"]);
+	}
+	
+	Matrix coefficients() {
+		return Matrix(summary.name ~ "[['coefficients']]");
+	}
+	
+	Vector residuals() {
+		return Vector(fit["residuals"]);
+	}
+	
+	Vector fittedValues() {
+		return Vector(fit["fitted.values"]);
+	}
+	
+	int dfResidual() {
+		return fit["df.residual"].as!int;
+	}
+	
+	List model() {
+		return List(fit.name ~ "['model']");
+	}
+	
+	double sigma() {
+		return summary["sigma"].as!double;
+	}
+	
+	double rsq() {
+		return summary["r.squared"].as!double;
+	}
+	
+	double adjrsq() {
+		return summary["adj.r.squared"].as!double;
+	}
+	
+	double fstat() {
+		return summary["fstatistic"].as!double;
+	}
+	
+	List unscaledCov() {
+		return List(summary.name ~ "['cov.unscaled']");
+	}
+  
+  Matrix nwCov() {
+    return Matrix("sandwich::NeweyWest(" ~ fit.name ~ ")");
+  }
+  
+  Vector nwStdErrors() {
+    return Vector("sqrt(diag(sandwich::NeweyWest(" ~ fit.name ~ ")))");
+  }
+  
+  Matrix nwCoefficients() {
+    evalRQ([
+      `tmp <- ` ~ summary.name ~ `[["coefficients"]]`,
+      `tmp[,2] <- sqrt(diag(sandwich::NeweyWest(` ~ fit.name ~ `)))`,
+      `tmp[,3] <- tmp[,1]/tmp[,2]`,
+      `tmp2 <- tmp[,-4]`]);
+    return Matrix("tmp2");
+  }
+  
+  Matrix whiteCov() {
+    return Matrix("sandwich::vcovHC(" ~ fit.name ~ ")");
+  }
+  
+  Matrix whiteCoefficients() {
+    evalRQ([
+      `tmp <- ` ~ summary.name ~ `[["coefficients"]]`,
+      `tmp[,2] <- sqrt(diag(sandwich::vcovHC(` ~ fit.name ~ `)))`,
+      `tmp[,3] <- tmp[,1]/tmp[,2]`,
+      `tmp2 <- tmp[,-4]`]);
+    return Matrix("tmp2");
+  }
+}
+
+TSFit lm(long f)(TS!f y, TS!f x) {
+  TSFit result;
+  result.frequency = f;
+  auto regdata = MTS!f(y, x);
+	string cmd = `lm(` ~ regdata.name ~ `[,1] ~ ` ~ regdata.name ~ `[,-1])`;
+	result.fit = List(cmd);
+	result.summary = List(`summary(` ~ result.fit.name ~ `)`);
+  result.start = regdata.start;
+  result.end = regdata.end;
+  return result;
+}

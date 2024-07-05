@@ -37,5 +37,11 @@ void main() {
   writeln(mts5.names);
   writeln(mts6.keys);
   
+  auto fit = lm(ts, ts2);
+  writeln(fit.start);
+  writeln(fit.end);
+  writeln(fit.rsq);
+  writeln(fit.residuals);
+
   closeR();
 }

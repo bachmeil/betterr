@@ -145,9 +145,6 @@ struct RData {
     static if(is(T == DataFrame)) {
       return DataFrame(this);
     }
-    static if(is(T == RArray)) {
-      return RArray(this);
-    }
   }
   
   string toString() {
