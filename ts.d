@@ -8,6 +8,7 @@ import std.conv, std.exception, std.math, std.range, std.stdio, std.sumtype;
 import std.algorithm.comparison: max, min;
 import std.algorithm.searching;
 import std.array: join;
+import std.variant;
 
 struct TS(int freq) {
   RData data;
@@ -90,7 +91,7 @@ struct TS(int freq) {
 			_end = [tmpEnd[0], tmpEnd[1]];
 		}
   }
-  
+
   static if(freq == 1) {
 		this(string code, long s) {
 			data = RData("ts(" ~ code ~ ", start=" ~ _start.to!string ~ ")");
@@ -466,6 +467,9 @@ struct MTS(long freq) {
   auto opIndex(long ind) {
 		return TS!freq(data.name ~ `[,` ~ to!string(ind+1) ~ `]`);
 	}
+	
+	// opIndex(string[] varnames)
+	// opIndex(string[] varnames...)
   
   // Return a reference to that TS's data
   double[] array(string name) {
@@ -488,6 +492,14 @@ struct MTS(long freq) {
 		evalR(`colnames(` ~ data.name ~ `) <- c(` ~ quotedNames.join(", ") ~ `)`);
 		// Changing the names can change the pointer
 		data.update();
+	}
+	
+	int rows() {
+		return to!int(asLong(start, freq) - asLong(end, freq) + 1);
+	}
+	
+	int cols() {
+		return to!int(names.length);
 	}
   
   void print(string msg="") {
@@ -827,14 +839,16 @@ struct MTS(long freq) {
 //~ }
 
 /* This stuff will be moved to its own module sometime, but not today. */
-alias TSObservation = SumType!(long, long[]);
-
-struct TSFit {
+struct TSFit(long freq) {
   List fit;
   List summary;
-  TSObservation start;
-  TSObservation end;
-  long frequency;
+  static if (freq == 1) {
+		long start;
+		long end;
+	} else {
+		long[] start;
+		long[] end;
+	}
 
 	void print(string msg="") {
 		if (msg.length > 0) {
@@ -843,20 +857,20 @@ struct TSFit {
 		printR(fit.x);
 	}
   
-  Vector beta() {
+  Vector coef() {
 		return Vector(fit["coefficients"]);
 	}
 	
-	Matrix coefficients() {
+	Matrix coefTable() {
 		return Matrix(summary.name ~ "[['coefficients']]");
 	}
 	
-	Vector residuals() {
-		return Vector(fit["residuals"]);
+	TS!freq residuals() {
+		return TS!freq("residuals(" ~ fit.name ~ ")", start);
 	}
 	
-	Vector fittedValues() {
-		return Vector(fit["fitted.values"]);
+	TS!freq fittedValues() {
+		return TS!freq("fitted(" ~ fit.name ~ ")", start);
 	}
 	
 	int dfResidual() {
@@ -918,10 +932,8 @@ struct TSFit {
   }
 }
 
-TSFit lm(long f)(TS!f y, TS!f x) {
-  TSFit result;
-  result.frequency = f;
-  auto regdata = MTS!f(y, x);
+TSFit!f lm(long f)(MTS!f regdata) {
+  TSFit!f result;
 	string cmd = `lm(` ~ regdata.name ~ `[,1] ~ ` ~ regdata.name ~ `[,-1])`;
 	result.fit = List(cmd);
 	result.summary = List(`summary(` ~ result.fit.name ~ `)`);
@@ -929,3 +941,114 @@ TSFit lm(long f)(TS!f y, TS!f x) {
   result.end = regdata.end;
   return result;
 }
+
+TSFit!f lm(long f)(TS!f y, TS!f x) {
+  return lm(MTS!f(y, x));
+}
+
+// lhs variable goes first
+TSFit!f lm(long f)(TS!f variables...) {
+  return lm(MTS!f(variables));
+}
+
+struct TSFitOptions {
+	bool intercept = true;
+	Variant start;
+	Variant end;
+	Variant weights;
+}
+
+TSFit!f lm(long f)(MTS!f regdata, TSFitOptions options) {
+	string formula;
+	if (options.intercept) {
+	  formula = regdata.name ~ `[,1] ~ ` ~ regdata.name ~ `[,-1]`;
+	} else {
+		formula = regdata.name ~ `[,1] ~ ` ~ regdata.name ~ `[,-1] - 1`;
+	}	
+	string[] opt;
+	Vector subset;
+	bool addSubset = true;
+	
+	long start;
+	long end;
+	static if (f == 1) {
+		long estimationStart = regdata.start;
+		long estimationEnd = regdata.end;
+		long* s = options.start.peek!long;
+		long* e = options.end.peek!long;
+	} else {
+		long[] estimationStart = regdata.start;
+		long[] estimationEnd = regdata.end;
+		long[]* s = (options.start).peek!(long[]);
+		long[]* e = (options.end).peek!(long[]);
+	}
+	
+	if ( (s is null) && (e is null) ) {
+		addSubset = false;
+	}
+	
+	long offset0 = 0;
+	long offset1 = 0;
+	if (s !is null) {
+		estimationStart = *s;
+		start = asLong(*s, f);
+		long dataStart = asLong(regdata.start, f);
+		if (start > dataStart) {
+			offset0 = start - Start;
+		}
+	}
+	if (e !is null) {
+		estimationEnd = *e;
+		end = asLong(*e, f);
+		long dataEnd = asLong(regdata.end, f);
+		if (end < dataEnd) {
+			offset1 = dataEnd - end;
+		}
+	}
+	
+	if (addSubset) {
+		subset = Vector(regdata.rows);
+		foreach(ii; offset0..subset.length-offset1) {
+			subset[ii] = 1;
+		}
+		opt ~= "subset = " ~ subset.name;
+	}
+	
+	Vector* w = weights.peek!Vector;
+	if (w) {
+		opt ~= "weights = " ~ *w.name;
+	}
+	
+  TSFit!f result;
+	string cmd = `lm(` ~ formula;
+	if (opt.length > 0) {
+		cmd ~= ", " ~ opt.join(", ");
+	}
+	cmd ~= ")";
+	result.fit = List(cmd);
+	result.summary = List(`summary(` ~ result.fit.name ~ `)`);
+  result.start = estimationStart;
+  result.end = estimationEnd;
+  return result;
+}
+
+long asLong(long[] d, long f) {
+	return f*(d[0]-1900) + (d[1]-1);
+}
+
+long asLong(long d, long f) {
+	return d;
+}
+
+TSFit!f lm(long f)(TS!f y, TS!f x, TSFitOptions options) {
+	return lm!f(MTS!f(y, x), options);
+}
+
+TSFit!f lm(long f)(TS!f y, MTS!f x, TSFitOptions options) {
+	return lm!f(MTS!f(y, x), options);
+}
+
+
+	
+	
+	
