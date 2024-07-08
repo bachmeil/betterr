@@ -195,11 +195,11 @@ struct TS(int freq) {
     }
     
     /* Since it's a date, the end point is included */
-    TS opSlice(long[] s, long[] e) {
+    TS!freq opSlice(long[] s, long[] e) {
       enforce(notAfter(s, e), "Start date cannot be after the end date");
       enforce(notBefore(s, this.start), "Start date prior to start of series");
       enforce(notAfter(e, this.end), "End date after start of series");
-      return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
+      return TS!freq("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
         ~ s[1].to!string ~ "), end=c(" ~ e[0].to!string ~ ", " 
         ~ e[1].to!string ~ "))");
     }
@@ -495,7 +495,7 @@ struct MTS(long freq) {
 	}
 	
 	int rows() {
-		return to!int(asLong(start, freq) - asLong(end, freq) + 1);
+		return to!int(asLong(end, freq) - asLong(start, freq) + 1);
 	}
 	
 	int cols() {
@@ -858,7 +858,8 @@ struct TSFit(long freq) {
 	}
   
   Vector coef() {
-		return Vector(fit["coefficients"]);
+		printR(evalR(fit.name ~ "[['coefficients']]"));
+		return Vector(fit.name ~ "[['coefficients']]");
 	}
 	
 	Matrix coefTable() {
@@ -934,7 +935,8 @@ struct TSFit(long freq) {
 
 TSFit!f lm(long f)(MTS!f regdata) {
   TSFit!f result;
-	string cmd = `lm(` ~ regdata.name ~ `[,1] ~ ` ~ regdata.name ~ `[,-1])`;
+  evalRQ("lhs <- " ~ regdata.name ~ "[,1];rhs <- " ~ regdata.name ~ "[,-1];");
+	string cmd = "lm(lhs~rhs)";
 	result.fit = List(cmd);
 	result.summary = List(`summary(` ~ result.fit.name ~ `)`);
   result.start = regdata.start;
@@ -953,78 +955,98 @@ TSFit!f lm(long f)(TS!f variables...) {
 
 struct TSFitOptions {
 	bool intercept = true;
-	Variant start;
-	Variant end;
-	Variant weights;
+	long start1;
+	long end1;
+	long[] startOther;
+	long[] endOther;
+	Vector * _weights;
+	
+	void start(long x) {
+		start1 = x;
+	}
+	
+	void end(long x) {
+		end1 = x;
+	}
+
+	void start(long[] x) {
+		startOther = x;
+	}
+	
+	void end(long[] x) {
+		endOther = x;
+	}
+	
+	void weights(Vector w) {
+		assert(w !is null, "Cannot pass null Vector to TSFitOptions");
+		assert(w.length > 0, "Cannot pass zero-length Vector to TSFitOptions");
+		_weights = &w;
+	}
+	
+	Vector weights() {
+		return *_weights;
+	}
 }
+alias Opt = TSFitOptions;
 
 TSFit!f lm(long f)(MTS!f regdata, TSFitOptions options) {
+	import std.algorithm.comparison: min, max;
 	string formula;
 	if (options.intercept) {
-	  formula = regdata.name ~ `[,1] ~ ` ~ regdata.name ~ `[,-1]`;
+	  formula =  "lhs ~ rhs";
 	} else {
-		formula = regdata.name ~ `[,1] ~ ` ~ regdata.name ~ `[,-1] - 1`;
+		formula = "lhs ~ rhs - 1";
 	}	
 	string[] opt;
-	Vector subset;
-	bool addSubset = true;
-	
-	long start;
-	long end;
-	static if (f == 1) {
-		long estimationStart = regdata.start;
-		long estimationEnd = regdata.end;
-		long* s = options.start.peek!long;
-		long* e = options.end.peek!long;
-	} else {
-		long[] estimationStart = regdata.start;
-		long[] estimationEnd = regdata.end;
-		long[]* s = (options.start).peek!(long[]);
-		long[]* e = (options.end).peek!(long[]);
-	}
-	
-	if ( (s is null) && (e is null) ) {
-		addSubset = false;
-	}
+	BoolVector subset;
 	
 	long offset0 = 0;
 	long offset1 = 0;
-	if (s !is null) {
-		estimationStart = *s;
-		start = asLong(*s, f);
-		long dataStart = asLong(regdata.start, f);
-		if (start > dataStart) {
-			offset0 = start - Start;
+	static if (f == 1) {
+		long estimationStart = max(options.start1, regdata.start);
+		long estimationEnd = min(options.end1, regdata.end);
+		offset0 = estimationStart - regdata.start;
+		offset1 = regdata.end - estimation.end;
+	} else {
+		long[] estimationStart;
+		long[] estimationEnd;
+		auto s = options.startOther.asLong(f);
+		auto sd = regdata.start.asLong(f);
+		if (s > sd) {
+			offset0 = s-sd;
+			estimationStart = options.startOther;
+		} else {
+			estimationStart = regdata.start;
+		}
+		auto e = options.endOther.asLong(f);
+		auto ed = regdata.end.asLong(f);
+		if ( (e > 0) && (e < ed) ) {
+			offset1 = ed - e;
+			estimationEnd = options.endOther;
+		} else {
+			estimationEnd = regdata.end;
 		}
 	}
-	if (e !is null) {
-		estimationEnd = *e;
-		end = asLong(*e, f);
-		long dataEnd = asLong(regdata.end, f);
-		if (end < dataEnd) {
-			offset1 = dataEnd - end;
-		}
-	}
-	
-	if (addSubset) {
-		subset = Vector(regdata.rows);
-		foreach(ii; offset0..subset.length-offset1) {
+
+	if ( (offset0 != 0) || (offset1 != 0) ) {
+		subset = BoolVector(regdata.rows);
+		foreach(ii; offset0..regdata.rows-offset1) {
 			subset[ii] = 1;
 		}
 		opt ~= "subset = " ~ subset.name;
 	}
 	
-	Vector* w = weights.peek!Vector;
-	if (w) {
-		opt ~= "weights = " ~ *w.name;
+	if (options._weights !is null) {
+		opt ~= "weights = " ~ options.weights.name;
 	}
 	
   TSFit!f result;
-	string cmd = `lm(` ~ formula;
+	string cmd = "lm(" ~ formula;
 	if (opt.length > 0) {
 		cmd ~= ", " ~ opt.join(", ");
 	}
 	cmd ~= ")";
+	evalRQ("lhs<- " ~ regdata.name ~ "[,1];rhs<- " ~ regdata.name ~ "[,-1];");
 	result.fit = List(cmd);
 	result.summary = List(`summary(` ~ result.fit.name ~ `)`);
   result.start = estimationStart;
@@ -1032,15 +1054,19 @@ TSFit!f lm(long f)(MTS!f regdata, TSFitOptions options) {
   return result;
 }
 
-long asLong(long[] d, long f) {
-	return f*(d[0]-1900) + (d[1]-1);
-}
-
-long asLong(long d, long f) {
-	return d;
+private long asLong(long[] d, long f) {
+	if (d.length == 0) {
+		return 0;
+	} else {
+		return f*(d[0]-1900) + (d[1]-1);
+	}
 }
 
 TSFit!f lm(long f)(TS!f y, TS!f x, TSFitOptions options) {
+	return lm!f(MTS!f(y, x), options);
+}
+
+TSFit!f lm(long f)(TS!f y, MTS!f x, TSFitOptions options) {
 	return lm!f(MTS!f(y, x), options);
 }
 

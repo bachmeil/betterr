@@ -544,6 +544,13 @@ struct BoolVector {
     }
   }
 
+  /* Used to allow assignment to a zero-length Vector. */
+  void initialize(long r) {
+    rows = r;
+    data = RData("logical(" ~ r.to!string ~ ")");
+    ptr = LOGICAL(data.x);
+  }
+
   bool opIndex(long r) {
     enforce(r < rows, "Index out of range: Index on IntVector is too large");
     return ptr[r].to!bool;
@@ -568,6 +575,9 @@ struct BoolVector {
   }
 
   void opAssign(BoolVector v) {
+    if (rows == 0) {
+      initialize(v.length);
+    }
     enforce(v.length == rows, "Vectors have different lengths");
     foreach(ii; 0..v.length) {
       ptr[ii] = v.ptr[ii];
