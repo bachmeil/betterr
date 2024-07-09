@@ -1,5 +1,5 @@
 module cran.vars;
-import betterr.r, betterr.list;
+import betterr.r, betterr.list, betterr.matrix, betterr.rdata, betterr.ts;
 import std.conv;
 import std.stdio, std.sumtype;
 
@@ -9,7 +9,7 @@ struct VAR {
   long lagMax = -1;
   string ic = "AIC";
   
-  List fit(T)(T x) {
+  VAREst fit(Matrix x) {
     string cmd = `vars::VAR(` ~ x.name ~ `, p=` ~ p.to!string ~ `, type="` ~ type ~ `"`;
     if (lagMax > 0) {
       cmd ~= `, lag.max=` ~ lagMax.to!string;
@@ -18,10 +18,18 @@ struct VAR {
     writeln(cmd);
     return VAREst(RData(cmd));
   }
+  
+  VAREst fit(long f)(MTS!f x) {
+    return fit(x.mat);
+  }
 }
 
 struct VAREst {
 	RData output;
+	
+	this(RData rd) {
+		output = rd;
+	}
 	
 	List varresult() {
 		return List(output.name ~ "$varresult");
@@ -59,7 +67,7 @@ struct VAREst {
 		auto tmp = Rf_protect(evalR(output.name ~ "$restrictions"));
 		if (Rf_isNull(tmp)) {
 			Rf_unprotect(1);
-			return MaybeMatrix(null);
+			return MaybeMatrix(empty);
 		} else {
 			Rf_unprotect(1);
 			return MaybeMatrix(Matrix(output.name ~ "$restrictions"));
@@ -67,19 +75,21 @@ struct VAREst {
 	}	
 }
 
-alias MaybeMatrix = SumType!(null, Matrix);
+alias MaybeMatrix = SumType!(Empty, Matrix);
+private struct Empty {}
+private Empty empty;
 
-struct VAREquations {
-	LMFit[] equations;
-	alias this equations;
+//~ struct VAREquations {
+	//~ LMFit[] equations;
+	//~ alias equations this;
 	
-	this(List varfit) {
-		auto tmp = Rf_protect(varfit.name ~ "$varresult");
-		foreach(ii; 0..tmp.length) {
-			equations ~= LMFit(tmp[ii]);
-		}
-	}
-}
+	//~ this(List varfit) {
+		//~ auto tmp = Rf_protect(varfit.name ~ "$varresult");
+		//~ foreach(ii; 0..tmp.length) {
+			//~ equations ~= LMFit(tmp[ii]);
+		//~ }
+	//~ }
+//~ }
 	
 	
 	

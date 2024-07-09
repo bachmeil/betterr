@@ -1,5 +1,6 @@
 import betterr.ts, betterr.random, betterr.matrix, betterr.vector;
 import betterr.r;
+import cran.vars;
 import std.conv, std.stdio, std.variant;
 
 void main() {
@@ -71,6 +72,17 @@ void main() {
 
 	//~ Opt opt;
 	//~ writeln(opt.startOther.length);
+	
+	regdata.mat.print("Regression data");
+
+  auto ts3 = TS!12(rnorm(120), [1990, 4]);
+  auto ts4 = TS!12(rnorm(120), [1990, 4]);
+  auto ts5 = TS!12(rnorm(120), [1990, 4]);
+	MTS!12 vardata = MTS!12(ts3, ts4, ts5);
+	VAR fitvar;
+	fitvar.lagMax = 12;
+	auto varoutput = fitvar.fit(vardata);
+	varoutput.varresult.print("VAR model");
 
   closeR();
 }

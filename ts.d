@@ -482,6 +482,10 @@ struct MTS(long freq) {
     }
 		return ptr[index*length..index*(length+1)];
 	}
+	
+	Matrix mat() {
+		return Matrix("as.matrix(" ~ data.name ~ ")");
+	}
 
 	void colnames(string[] newnames) {
 		string[] quotedNames;
