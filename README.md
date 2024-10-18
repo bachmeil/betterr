@@ -8,6 +8,8 @@ Feel free to use it, but things might break. There's no intention of turning thi
 
 # Recent changes
 
+October 18, 2024: I updated the install.d script so that everything is included in the Makefile by default. I added betterr.everything. You can now import all of betterr with a simple "import betterr.everything". Gretl matrix and GSL random number generation are included by default in the Makefile.
+
 March 6, 2024: I added prng.d, which is a port of a parallel RNG written in Java by Pierre L'Ecuyer. gslheaders.c is the C header code needed to call the GSL functions that generate draws from different distributions. testgslprng.d is an example that shows how to use it.
 
 This was one of the few remaining optimization opportunities for betterr. Although the previous options covered most cases, there was still some overhead, and a random number generator is something that gets called many times in the course of a simulation (even a small simulation). With this, you can generate draws sequentially (giving high speed in one process) or parallel (somewhat slower but simultaneously across many processes at once). The GSL is heavily used, well-tested project written in C. This should eliminate any concerns about the speed of betterr for RNG.
