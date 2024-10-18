@@ -51,7 +51,7 @@ void main(string[] args) {
     appFilename = setExtension(args[2], "d");
   }
 	if (!exists(args[1] ~ "/Makefile")) {
-		std.file.write(args[1] ~ "/Makefile", "LINK=-L" ~ rinsideLocation ~ "/lib/libRInside.so -L-lR\n\napp:\n\tldmd2 -i " ~ appFilename ~ " $(LINK)\n");
+		std.file.write(args[1] ~ "/Makefile", "LINK=-L" ~ rinsideLocation ~ "/lib/libRInside.so -L-lR -P-Igsl/rng gsl/rng/*.c -P-Igretl/matrix gretl/matrix/*.c gretl/matrix/*.d -L-lopenblas\n\napp:\n\tldmd2 -i " ~ appFilename ~ " $(LINK)\n");
 	}
   if (!exists(args[1] ~ "/" ~ appFilename)) {
     std.file.write(args[1] ~ "/" ~ appFilename, "");

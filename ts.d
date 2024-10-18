@@ -1,6 +1,6 @@
 /* Warning: This is still experimental. There may be large breaking
  * changes. */
-module betterr.array;
+module betterr.ts;
 import betterr.rdata;
 import betterr.r, betterr.list;
 import betterr.matrix, betterr.vector;

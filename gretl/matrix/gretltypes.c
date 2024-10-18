@@ -1,5 +1,5 @@
 #include <common.h>
-__import glib;
+__import gretl.matrix.glib;
 
 /**
  * gretl_matrix:

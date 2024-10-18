@@ -689,7 +689,7 @@ version(mir) {
 	double fastQuantile(double * x, long k, double p) {
 		import std.algorithm.sorting: partialSort;
 		double quantileIndex = (k-1).to!double*p;
-		long upper = ceiling(quantileIndex);
+		long upper = ceiling(quantileIndex).to!long;
 		x[0..k].partialSort(upper);
 		return fastestQuantile(x, k, p);
 	}
@@ -717,14 +717,15 @@ version(mir) {
 	/* Assumes x is sorted in increasing order */
 	double fastestQuantile(double * x, long k, double p) {
 		double quantileIndex = (k-1).to!double*p;
-		long lower = floor(quantileIndex);
+		long lower = floor(quantileIndex).to!long;
 		long upper = lower+1;
 		if (lower == k) {
 			return x[k-1];
 		} else if (upper == 0) {
 			return x[0];
 		} else {
-			double weightCeiling = quantileIndex - floor(i);
+      // What is i?
+			double weightCeiling = quantileIndex - floor(quantileIndex);
 			double weightFloor = 1-weightCeiling;
 			return weightFloor*x[lower] + weightCeiling*x[upper];
 		}

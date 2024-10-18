@@ -1,3 +1,4 @@
+module gretl.matrix.glib;
 import core.stdc.stdlib;
 import core.stdc.string;
 
