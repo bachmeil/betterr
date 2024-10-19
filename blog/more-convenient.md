@@ -1,0 +1,11 @@
+# Making betterr more convenient
+
+Over time, I've added some features to betterr to make it more convenient. I've done this in three ways:
+
+- Creating an install script. It is creatively named `install.d`. Once you clone the betterr repo, you can add betterr to your project with `rdmd [dir]`, where `[dir]` is your project directory. It copies all source files in such a way that you can compile your project using the `-i` option. It creates a Makefile, adds linking information for `libR`, `libRInside`, and `libopenblas`, and adds the paths/files that are needed for the ImportC functionality. Optionally, you can add the name of your main source file as a second argument. Then you can import whatever you want and compile by typing `make`. A shorter way to say this is that the install script sets everything up so that using it is as convenient as R, Python, or Julia.
+- I assume everything is installed. To make *all* functionality of betterr available, you need to have installed R, RInside, and Openblas. I assume it's installed in the install script. In hindsight, I don't know why I was ever hesitant to make an assumption like that.
+- Added a `betterr.everything` module. This doesn't include the GSL random number generation or the Gretl matrix library, but all of the R-related stuff is then imported. Since all of those modules are designed to work together, there's no reason not to do this. The effect on compile times is nil.
+
+Some additional changes may come. I might use symlinks rather than copying files. That will keep the project size smaller and automatically update when betterr updates. I may identify `libRInside.so` on compilation. I don't know if that will slow down compilation. I may alternatively have machine-specific compilation holding all the configuration information.
+
+Another thing I've been pondering is giving it the feel of a scripting language. Rather creating a source file with a `main` function, importing the necessary libraries, and starting/closing R, you could create a file such as `source.d` that jumps straight into using betterr. All the boilerplate is added for you when you compile it using `betterr source`. This stuff sounds interesting on paper, but in practice the overhead is very minimal, barely something I notice.
