@@ -19,7 +19,7 @@
 module gsl.rng.random;
 import distributions, gslrng, mt;
 import core.stdc.config;
-import betterr.vector;
+import betterr.matrix, betterr.vector;
 
 alias RNGType = gsl_rng_type*;
 alias RNG = gsl_rng*;
@@ -37,6 +37,14 @@ Vector rnorm(long n, RNG r, double mu=0.0, double sd=1.0) {
   auto result = Vector(n);
   foreach(ii; 0..n) {
     result[ii] = rnorm(r, mu, sd);
+  }
+  return result;
+}
+
+Matrix rnorm(long rr, long cc, RNG r, double mu=0.0, double sd=1.0) {
+  auto result = Matrix(rr, cc);
+  foreach(ii; 0..rr*cc) {
+    result.ptr[ii] = rnorm(r, mu, sd);
   }
   return result;
 }
