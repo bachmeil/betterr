@@ -46,7 +46,7 @@ void main(string[] args) {
 	writeln(executeShell(`cp gsl/rng/* ` ~ args[1] ~ `/gsl/rng/`).output);
 
   // Create the Makefile
-  string appFilename = "file";
+  string appFilename = "file.d";
   if (args.length > 2) {
     appFilename = setExtension(args[2], "d");
   }
