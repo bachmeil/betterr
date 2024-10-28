@@ -64,3 +64,22 @@ double rbeta(RNG r, double a, double b) {
 double dbeta(double x, double a, double b) {
   return gsl_ran_beta_pdf(x, a, b);
 }
+
+/* Draw an integer between 0 and n */
+int genInt(RNG r, long n) {
+  return gsl_rng_uniform_int(r, to!int(n+1));
+}
+
+int genInt(RNG r, int n) {
+  return gsl_rng_uniform_int(r, n+1);
+}
+
+/* Draw an integer between n0 and n1 inclusive */
+int genInt(RNG r, long n0, long n1) {
+  return genInt(r, n1 - n0) + n0.to!int;
+}
+
+int genInt(RNG r, int n0, int n1) {
+  return genInt(r, n1 - n0) + n0;
+}
+
