@@ -26,3 +26,6 @@ There is also a binding generator in this directory.
 - rfunctions.d and rinsidefunctions.d contain structs that hold the functions we're binding. These modules are imported by makebindings.d.
 - bindings.d is the finished product after polishing the formatting. The output of creation.d is copied into the file and edited.
 - The compilation command is `ldmd2 -i creation.d`.
+
+
+rtest.d is a file to test that it's working correctly. I compiled it with `ldmd2 -i rtest.d`.
