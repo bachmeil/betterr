@@ -29,3 +29,4 @@ There is also a binding generator in this directory.
 
 
 rtest.d is a file to test that it's working correctly. I compiled it with `ldmd2 -i rtest.d`.
+ 
