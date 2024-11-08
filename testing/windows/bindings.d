@@ -12,6 +12,7 @@ extern(C) {
 	Sexprec* function(uint, int) Rf_allocVector;
 	Sexprec* function(uint, int, int) Rf_allocMatrix;
 	Sexprec* function(int) Rf_allocList;
+	Sexprec* function(const(char*)) Rf_install;
 
 	void function(Sexprec*, char*) passToR;
 	Sexprec* function(char*) evalInR;
@@ -22,6 +23,7 @@ extern(C) {
 
 alias startR = setupRinC;
 alias closeR = teardownRinC;
+alias printR = Rf_PrintValue;
 
 void bind_libr(string dllPath, string dllName, bool errors=false) {
 	import std.process, std.stdio, std.utf;
@@ -43,6 +45,7 @@ void bind_libr(string dllPath, string dllName, bool errors=false) {
 	Rf_allocVector = cast(typeof(Rf_allocVector)) GetProcAddress(libr, "Rf_allocVector");
 	Rf_allocMatrix = cast(typeof(Rf_allocMatrix)) GetProcAddress(libr, "Rf_allocMatrix");
 	Rf_allocList = cast(typeof(Rf_allocList)) GetProcAddress(libr, "Rf_allocList");
+	Rf_install = cast(typeof(Rf_install)) GetProcAddress(libr, "Rf_install");
 }
 
 void bind_rinside(string dllPath, string dllName, bool errors=false) {
@@ -62,6 +65,13 @@ void bind_rinside(string dllPath, string dllName, bool errors=false) {
 	teardownRinC = cast(typeof(teardownRinC)) GetProcAddress(rinside, "teardownRinC");
 }
 
+// This needs to be done after starting R
+//~ string bindGlobals() {
+	//~ // This is what R does
+	//~ return `R_DimSymbol = Rf_install("dim");
+//~ `;
+//~ }
+
 Robj evalR(string cmd) {
 	return evalInR(toUTFz!(char*)(cmd));
 }
@@ -70,6 +80,17 @@ void evalRQ(string cmd) {
 	evalQuietlyInR(toUTFz!(char*)(cmd));
 }
 
-Robj RNil() {
+// https://cran.r-project.org/doc/manuals/r-release/R-ints.html#Variables-in-Windows-DLLs-1
+// NULL is a vector with one element, of type 0
+Robj R_Nilvalue() {
 	return Rf_allocVector(0, 1);
+}
+alias RNil = R_Nilvalue;
+
+Robj R_DimSymbol() {
+	return Rf_install("dim");
+}
+
+Robj R_GlobalEnv() {
+	return evalR("globalenv()");
 }

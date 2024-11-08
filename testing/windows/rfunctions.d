@@ -12,5 +12,6 @@ struct RAPIBindings {
 		Robj Rf_allocVector(uint type, int n);
 		Robj Rf_allocMatrix(uint type, int rows, int cols);
 		Robj Rf_allocList(int);
+		Robj Rf_install(const char * sym);
   }
 }

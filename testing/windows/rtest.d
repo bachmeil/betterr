@@ -8,10 +8,14 @@ void main() {
 	writeln(setupRinC);
 	
 	startR();
+	//~ mixin(bindGlobals);
+	
 	Rf_PrintValue(Rf_ScalarReal(-3.467));
 	Rf_PrintValue(evalR("rnorm(12)"));
 	evalRQ("library(urca)");
 	Rf_PrintValue(evalR("ur.df"));
 	Rf_PrintValue(RNil);
+	Rf_PrintValue(R_DimSymbol);
+	Rf_PrintValue(R_GlobalEnv);
 	closeR();
 }
