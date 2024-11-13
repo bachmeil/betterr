@@ -6,6 +6,12 @@ The name "better R" is loosely inspired by [Better C](https://dlang.org/spec/bet
 
 Feel free to use it, but things might break. There's no intention of turning this into a Dub package; I don't have time to maintain such a thing. Since it's open source, anyone that wants to is free to do so.
 
+# Are You Using This Project?
+
+If so, please create a discussion topic to let me know. I'm not aware of anyone else ever having used this project for anything meaningful. The future of D, unfortunately, is not bright. I had initially started this project for my own use, with the goal of eventually being able to write a library of D functions that coauthors and students could call, even if they don't know anything about D. I don't have time to support Windows and Mac. Yet those are the dominant OSes among academic economists. I've stopped recommending D to grad students, instead telling them to use a different language, the name of which is irrelevant.
+
+At this point, the development status is "anything I use and anything I find cool". *But if there are actually users with real use cases, that could change.*
+
 # Recent changes
 
 October 18, 2024: [See more details here](blog/more-convenient.md). I updated the install.d script so that everything is included in the Makefile by default. I added betterr.everything. You can now import all of betterr with a simple "import betterr.everything". Gretl matrix and GSL random number generation are included by default in the Makefile.
