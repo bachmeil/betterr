@@ -31,6 +31,8 @@ struct RData {
    * to R. */
   private char[28] release;
   
+  // We should have this for interpolation expression sequences
+  
   this(string code) {
 		//writeln(code); // Useful for debugging, since this is where many errors occur
 		data = new RDataStorage;
