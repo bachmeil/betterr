@@ -24,7 +24,7 @@ import std.process, std.stdio, std.string;
 
 void main(string[] args) {
 	assert(args.length > 1, "You need to supply an installation directory");
-	string rinsideLocation = executeShell(`Rscript -e "cat(find.package('RInside'))"`).output;
+	string rinsideLocation = executeShell(`Rscript --no-init-file -e "cat(find.package('RInside'))"`).output;
 	assert(!rinsideLocation.startsWith("Error "), "You do not have RInside installed. Install it and then run this program.");
   
   // Copy the betterr core source files
