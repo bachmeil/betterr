@@ -14,6 +14,8 @@ At this point, the development status is "anything I use and anything I find coo
 
 # Recent changes
 
+September 25, 2025: No big news to report. Posting this to let the world know this project is still active. I continue to use it for my own research. The total number of known users other than myself remains zero. Same for the total number of users that have reported they'd like to use betterr on Windows or Mac. As a result, I continue to work only on the things I find useful or interesting, and have no plans at this time to make it work on a non-Linux OS.
+
 October 18, 2024: [See more details here](blog/more-convenient.md). I updated the install.d script so that everything is included in the Makefile by default. I added betterr.everything. You can now import all of betterr with a simple "import betterr.everything". Gretl matrix and GSL random number generation are included by default in the Makefile.
 
 March 6, 2024: I added prng.d, which is a port of a parallel RNG written in Java by Pierre L'Ecuyer. gslheaders.c is the C header code needed to call the GSL functions that generate draws from different distributions. testgslprng.d is an example that shows how to use it.
