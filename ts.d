@@ -4,124 +4,82 @@ module betterr.ts;
 import betterr.rdata;
 import betterr.r, betterr.list;
 import betterr.matrix, betterr.vector;
-import std.conv, std.exception, std.math, std.range, std.stdio, std.sumtype;
+import std.conv, std.exception, std.math, std.range, std.stdio;
 import std.algorithm.comparison: max, min;
 import std.algorithm.searching;
 import std.array: join;
 import std.variant;
+import std.sumtype;
+import std.conv: text;
+import std.traits;
 
-struct TS(int freq) {
+alias MonthlyTS = RegularTS!12;
+alias QuarterlyTS = RegularTS!4;
+
+// Used like this
+// void foo(T)(T x) if(isTS!T) {}
+template isTS(T) {
+	static if (is(T == enum)) {
+		enum isTS = isTS!(OriginalType!T);
+	} else {
+		enum isTS = is(T == RegularTS!12) || is(T == RegularTS!4) || is(T == AnnualTS);
+	}
+}
+	
+struct RegularTS(long f) {
   RData data;
   double * ptr;
-  int frequency = freq;
+  enum frequency = f;
   alias data this;
   
-  static if(freq == 1) {
-		private long _start;
-		private long _end;
-		
-		long start() {
-			return _start;
-		}
-		
-		long end() {
-			return _end;
-		}
-		
-		void start(long s) {
-			_start = s;
-		}
-		
-		void end(long e) {
-			_end = e;
-		}
-		
-		long longStart() {
-			return _start;
-		}
-		
-		long longEnd() {
-			return _end;
-		}
-	} else {
-		private TimePeriod _start;
-		private TimePeriod _end;
+	private TimePeriod _start;
+	private TimePeriod _end;
 
-		long[] start() {
-			return _start.array;
-		}
+	long[] start() {
+		return _start.array;
+	}
 
-		long[] end() {
-			return _end.array;
-		}
+	long[] end() {
+		return _end.array;
+	}
 
-		void start(long[] s) {
-			_start.year = s[0];
-			_start.minor = s[1];
-		}
+	void start(long[] s) {
+		_start.year = s[0];
+		_start.minor = s[1];
+	}
 
-		void end(long[] e) {
-			_end.year = e[0];
-			_end.minor = e[1];
-		}
-
-		// Shouldn't normally use these, but they're here if you want them
-		long longStart() {
-			return _start.to!long;
-		}
-
-		long longEnd() {
-			return _end.to!long;
-		}
+	void end(long[] e) {
+		_end.year = e[0];
+		_end.minor = e[1];
 	}
   
   /* To access an existing ts object that's already inside R */
   this(string code) {
     data = RData(code);
     ptr = REAL(data.x);
-    _start = TimePeriod(freq);
-    _end = TimePeriod(freq);
+    _start = TimePeriod(12);
+    _end = TimePeriod(12);
     auto tmpStart = IntVector("as.integer(start(" ~ data.name ~ "))");
     auto tmpEnd = IntVector("as.integer(end(" ~ data.name ~ "))");
-    static if(freq == 1) {
-			_start = tmpStart[0];
-			_end = tmpEnd[0];
-		} else {
-			_start = [tmpStart[0], tmpStart[1]];
-			_end = [tmpEnd[0], tmpEnd[1]];
-		}
+		_start = [tmpStart[0], tmpStart[1]];
+		_end = [tmpEnd[0], tmpEnd[1]];
   }
 
-  static if(freq == 1) {
-		this(string code, long s) {
-			data = RData("ts(" ~ code ~ ", start=" ~ _start.to!string ~ ")");
-			ptr = REAL(data.x);
-			_start = s;
-			_end = s + data.x.length-1;
-		}
-    
-		this(T)(T v, long s) 
-		if (__traits(hasMember, v, "data") && 
-		(is(typeof(__traits(getMember, v, "data")) == RData))) {
-			this(v.name, s);
-		}
-	} else {
-		this(string code, long[] s) {
-			data = RData("ts(" ~ code ~ ", start=c(" ~ s[0].to!string ~ ", " 
-				~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
-			ptr = REAL(data.x);
-			_start = TimePeriod(freq);
-			_end = TimePeriod(freq);
-			_start = s;
-			_end = _start + (data.x.length-1);
-		}
+	this(string code, long[] s) {
+		data = RData("ts(" ~ code ~ ", start=c(" ~ s[0].to!string ~ ", " 
+			~ s[1].to!string ~ "), frequency=" ~ frequency.to!string ~ ")");
+		ptr = REAL(data.x);
+		_start = TimePeriod(frequency);
+		_end = TimePeriod(frequency);
+		_start = s;
+		_end = _start + (data.x.length-1);
+	}
 
-		/* Anything with an RData member named data */
-		this(T)(T v, long[] s) 
-		if (__traits(hasMember, v, "data") && 
-		(is(typeof(__traits(getMember, v, "data")) == RData))) {
-			this(v.name, s);
-		}
+	/* Anything with an RData member named data */
+	this(T)(T v, long[] s) 
+	if (__traits(hasMember, v, "data") && 
+	(is(typeof(__traits(getMember, v, "data")) == RData))) {
+		this(v.name, s);
 	}
 
   bool notBefore(long[] x, long[] y) {
@@ -168,75 +126,185 @@ struct TS(int freq) {
     return notAfter(x.array, y.array);
   }
   
-  static if(freq == 1) {
-		double opIndex(long d) {
-			return ptr[d - this._start];
-		}
+	/* If you want a single date returned as a TS, use the slice operator
+	 * with the same value for start and end. */
+	double opIndex(long y, long m) {
+		enforce(notBefore([y, m], this.start), "Index precedes the start of the TS");
+		enforce(notAfter([y, m], this.end), "Index is after the end of the TS");
+		return ptr[ [y, m] - this._start ];
+	}
+	
+	/* Since it's a date, the end point is included */
+	RegularTS!f opSlice(long[] s, long[] e) {
+		enforce(notAfter(s, e), "Start date cannot be after the end date");
+		enforce(notBefore(s, this.start), "Start date prior to start of series");
+		enforce(notAfter(e, this.end), "End date after start of series");
+		string cmd = i"window($(this.name), start=c($(s[0]), $(s[1])), end=c($(e[0]), $(e[1])))".text;
+		return RegularTS!f(cmd);
+	}
 
-    /* Since it's a date, the end point is included */
-    TS opSlice(long s, long e) {
-      return TS("window(" ~ this.name ~ ", start=" ~ s.to!string ~ ", end=" ~ e.to!string ~ ")");
-    }
-
-    TS until(long e) {
-      return TS("window(" ~ this.name ~ ", end=" ~ e.to!string ~ ")");
-    }
-
-    TS starting(long s) {
-      return TS("window(" ~ this.name ~ ", start=" ~ s.to!string ~ ")");
-    }
-	} else {
-    /* If you want a single date returned as a TS, use the slice operator
-     * with the same value for start and end. */
-    double opIndex(long y, long m) {
-      enforce(notBefore([y, m], this.start), "Index precedes the start of the TS");
-      enforce(notAfter([y, m], this.end), "Index is after the end of the TS");
-      return ptr[ [y, m] - this._start ];
-    }
-    
-    /* Since it's a date, the end point is included */
-    TS!freq opSlice(long[] s, long[] e) {
-      enforce(notAfter(s, e), "Start date cannot be after the end date");
-      enforce(notBefore(s, this.start), "Start date prior to start of series");
-      enforce(notAfter(e, this.end), "End date after start of series");
-      return TS!freq("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
-        ~ s[1].to!string ~ "), end=c(" ~ e[0].to!string ~ ", " 
-        ~ e[1].to!string ~ "))");
-    }
-
-    TS until(long[] e) {
-      return opSlice(this.start, e);
-      //~ return TS("window(" ~ this.name ~ ", end=c(" ~ e[0].to!string ~ ", " 
-        //~ ~ e[1].to!string ~ "))");
-    }
-    
-    TS starting(long[] s) {
-      return opSlice(s, this.end);
-      //~ return TS("window(" ~ this.name ~ ", start=c(" ~ s[0].to!string ~ ", " 
-        //~ ~ s[1].to!string ~ "))");
-    }
+	RegularTS!f until(long[] e) {
+		return opSlice(this.start, e);
+	}
+	
+	RegularTS!f until(long e0, long e1) {
+		return until([e0, e1]);
+	}
+	
+	RegularTS!f starting(long[] s) {
+		return opSlice(s, this.end);
+	}
+	
+	RegularTS!f starting(long s0, long s1) {
+		return starting([s0, s1]);
+	}
+  
+  RegularTS!f lag(long k) {
+		string cmd = i"lag($(this.name), $(-k))".text;
+    return RegularTS!f(cmd);
   }
   
-  TS lag(long k) {
-    return TS!freq("lag(" ~ this.name ~ ", " ~ to!string(-k) ~ ")");
-  }
-  
-  TS lead(long k) {
+  RegularTS!f lead(long k) {
     return lag(-k);
   }
   
-  TS diff(long k) {
-    return TS("diff(" ~ this.name ~ ", " ~ k.to!string ~ ")");
+  RegularTS!f diff(long k) {
+		string cmd = i"diff($(this.name), $(k))".text;
+    return RegularTS!f(cmd);
   }
   
-  TS pctChange(long k) {
-    return TS("(diff(" ~ this.name ~ ", " ~ k.to!string ~ ")/lag(" ~ this.name ~ ", " ~ to!string(-k) ~ "))");
+  RegularTS!f pctChange(long k) {
+		string cmd = i"(diff($(this.name), $(k))/lag($(this.name), $(-k)))".text;
+    return RegularTS!f(cmd);
   }
   
   double[] array() {
 		return ptr[0..(_end-_start+1)];
 	}
   
+  void print(string msg="") {
+    if (msg.length > 0) {
+      writeln("--------\n", msg, "\n--------");
+    }
+		writeln("\nStart: ", _start);
+		writeln("End: ", _end);
+    writeln("Frequency: ", frequency);
+    writeln();
+    printR(data.x);
+  }
+}
+
+struct AnnualTS {
+  RData data;
+  double * ptr;
+  int frequency = 1;
+  alias data this;
+  
+	long start;
+	long end;
+  
+  /* To access an existing ts object that's already inside R */
+  this(string code) {
+    data = RData(code);
+    ptr = REAL(data.x);
+    auto tmpStart = IntVector(i"as.integer(start($(data.name)))".text);
+    auto tmpEnd = IntVector(i"as.integer(end($(data.name)))".text);
+		start = tmpStart[0];
+		end = tmpEnd[0];
+  }
+
+	this(string code, long s) {
+		data = RData(i"ts($(code), start=$(s))".text);
+		ptr = REAL(data.x);
+		start = s;
+		end = s + data.x.length-1;
+	}
+	
+	this(T)(T v, long s) 
+	if (__traits(hasMember, v, "data") && 
+	(is(typeof(__traits(getMember, v, "data")) == RData))) {
+		this(v.name, s);
+	}
+
+	/* Anything with an RData member named data */
+	this(T)(T v, long s) 
+	if (__traits(hasMember, v, "data") && 
+	(is(typeof(__traits(getMember, v, "data")) == RData))) {
+		this(v.name, s);
+	}
+
+	double opIndex(long d) {
+		return ptr[d - this.start];
+	}
+
+	/* Since it's a date, the end point is included */
+	AnnualTS opSlice(long s, long e) {
+		return AnnualTS(i"window($(this.name), start=$(s), end=$(e))".text);
+	}
+
+	AnnualTS until(long e) {
+		return AnnualTS(i"window($(this.name), end=$(e))".text);
+	}
+
+	AnnualTS starting(long s) {
+		return AnnualTS(i"window($(this.name), start=$(s))".text);
+	}
+  
+  AnnualTS lag(long k) {
+    return AnnualTS(i"lag($(this.name), $(-k))".text);
+  }
+  
+  AnnualTS lead(long k) {
+    return lag(-k);
+  }
+  
+  AnnualTS diff(long k) {
+    return AnnualTS(i"diff($(this.name), $(k))".text);
+  }
+  
+  AnnualTS pctChange(long k) {
+    return AnnualTS(i"diff($(this.name), $(k))/lag($(this.name), $(-k))".text);
+  }
+  
+  double[] array() {
+		return ptr[0..(end-start+1)];
+	}
+  
+  void print(string msg="") {
+    if (msg.length > 0) {
+      writeln("--------\n", msg, "\n--------");
+    }
+		writeln("\nStart: ", start);
+		writeln("End: ", end);
+    writeln("Frequency: ", frequency);
+    writeln();
+    printR(data.x);
+  }
+}
+
+struct XTS {
+  RData data;
+  double * ptr;
+  int frequency = freq;
+  alias data this;
+  
+  // seq.Date(as.Date("1990-01-01"), as.Date("2025-04-01"), "months")
+	
+	this(T x) if(isTS!T) {
+		data = RData(i"xts($(x.name), as.Date($(x.name)))".text);
+		ptr = REAL(data.x);
+	}
+	
+	this(T x, string s, string e, string b) {
+		data = RData(i"xts($(x.name), seq.Date(as.Date('$(s)'), as.Date('$(e)'), '$(b)'))".text);
+		ptr = REAL(data.x);
+	}
+	
+	this(T1 x, T2 index) {
+		data = RData(i"xts($(x.name), order.by=$(index.name))".text);
+		ptr = REAL(data.x);
+	}		
+
   void print(string msg="") {
     if (msg.length > 0) {
       writeln("--------\n", msg, "\n--------");
@@ -516,6 +584,22 @@ struct MTS(long freq) {
     writeln();
     printR(data.x);
   }
+}
+
+struct DateSeq {
+	string start;
+	string end;
+	string by;
+	RData data;
+	alias data this;
+	
+	// Sequence of dates
+	this(string s, string e, string b) {
+		data = RData(i"seq.Date(as.Date('$(s)'), as.Date('$(e)'), '$(b)')".text);
+		start = s;
+		end = e;
+		by = b;
+	}
 }
 
 //~ MTS!f combine(long f)(TS!f[] series) {
