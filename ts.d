@@ -290,17 +290,17 @@ struct XTS {
   
   // seq.Date(as.Date("1990-01-01"), as.Date("2025-04-01"), "months")
 	
-	this(T x) if(isTS!T) {
+	this(T)(T x) if(isTS!T) {
 		data = RData(i"xts($(x.name), as.Date($(x.name)))".text);
 		ptr = REAL(data.x);
 	}
 	
-	this(T x, string s, string e, string b) {
+	this(T)(T x, string s, string e, string b) {
 		data = RData(i"xts($(x.name), seq.Date(as.Date('$(s)'), as.Date('$(e)'), '$(b)'))".text);
 		ptr = REAL(data.x);
 	}
 	
-	this(T1 x, T2 index) {
+	this(T1, T2)(T1 x, T2 index) {
 		data = RData(i"xts($(x.name), order.by=$(index.name))".text);
 		ptr = REAL(data.x);
 	}		
