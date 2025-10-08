@@ -283,3 +283,35 @@ RegOutput dqrls(Vector y, Matrix x, double tol=1e-07) {
 		pivot.ptr, qraux.ptr, work.ptr);
 	return result;
 }
+
+/* Low-level routine for estimation you should only use if you really
+ * need the performance and if you understand how to work with pointers.
+ * If not, use the above function instead. y is a vector. */
+RegOutput dqrls(double * yptr, double * xptr, int xrows, int xcols) {
+	RegOutput result;
+	//~ This is xrows
+	//~ int n = x.rows.to!int;
+	//~ This is xcols
+	//~ int p = x.cols.to!int;
+	int ny = 1;
+	result.coef = new double[p];
+	result.residuals = new double[n];
+	result.effects = new double[n];
+	double[] xreg;
+	xreg.reserve(n*p);
+	//~ x.ptr is now xptr
+	//~ foreach(val; x.ptr[0..n*p]) {
+		//~ xreg ~= val;
+	//~ }
+	foreach(val; xptr[0..xrows*xcols]) {
+		xreg ~= val;
+	}
+	auto pivot = new int[p];
+	auto qraux = new double[p];
+	auto work = new double[2*p];
+	dqrls_(xreg.ptr, &n, &p, y.ptr, &ny, &tol, result.coef.ptr,
+		result.residuals.ptr, result.effects.ptr, &(result.rank),
+		pivot.ptr, qraux.ptr, work.ptr);
+	return result;
+}
+
