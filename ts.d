@@ -285,7 +285,7 @@ struct AnnualTS {
 struct XTS {
   RData data;
   double * ptr;
-  int frequency = freq;
+  int frequency;
   alias data this;
   
   // seq.Date(as.Date("1990-01-01"), as.Date("2025-04-01"), "months")
