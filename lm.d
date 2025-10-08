@@ -294,11 +294,11 @@ RegOutput dqrls(double * yptr, double * xptr, int xrows, int xcols) {
 	//~ This is xcols
 	//~ int p = x.cols.to!int;
 	int ny = 1;
-	result.coef = new double[p];
-	result.residuals = new double[n];
-	result.effects = new double[n];
+	result.coef = new double[xcols];
+	result.residuals = new double[xrows];
+	result.effects = new double[xrows];
 	double[] xreg;
-	xreg.reserve(n*p);
+	xreg.reserve(xrows*xcols);
 	//~ x.ptr is now xptr
 	//~ foreach(val; x.ptr[0..n*p]) {
 		//~ xreg ~= val;
@@ -306,10 +306,10 @@ RegOutput dqrls(double * yptr, double * xptr, int xrows, int xcols) {
 	foreach(val; xptr[0..xrows*xcols]) {
 		xreg ~= val;
 	}
-	auto pivot = new int[p];
-	auto qraux = new double[p];
-	auto work = new double[2*p];
-	dqrls_(xreg.ptr, &n, &p, y.ptr, &ny, &tol, result.coef.ptr,
+	auto pivot = new int[xcols];
+	auto qraux = new double[xcols];
+	auto work = new double[2*xcols];
+	dqrls_(xreg.ptr, &n, &xcols, y.ptr, &ny, &tol, result.coef.ptr,
 		result.residuals.ptr, result.effects.ptr, &(result.rank),
 		pivot.ptr, qraux.ptr, work.ptr);
 	return result;
