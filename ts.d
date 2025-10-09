@@ -309,13 +309,14 @@ struct XTS {
     if (msg.length > 0) {
       writeln("--------\n", msg, "\n--------");
     }
-    static if(freq == 1) {
-      writeln("\nStart: ", start);
-      writeln("End: ", end);
-    } else {
-      writeln("\nStart: ", _start);
-      writeln("End: ", _end);
-    }
+    // Have to figure this out, but not now
+    //~ if(frequency == 1) {
+      //~ writeln("\nStart: ", start);
+      //~ writeln("End: ", end);
+    //~ } else {
+      //~ writeln("\nStart: ", _start);
+      //~ writeln("End: ", _end);
+    //~ }
     writeln("Frequency: ", frequency);
     writeln();
     printR(data.x);

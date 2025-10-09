@@ -20,6 +20,7 @@ module gsl.rng.random;
 import distributions, gslrng, mt;
 import core.stdc.config;
 import betterr.matrix, betterr.vector;
+import std.conv: to;
 
 alias RNGType = gsl_rng_type*;
 alias RNG = gsl_rng*;
@@ -67,11 +68,11 @@ double dbeta(double x, double a, double b) {
 
 /* Draw an integer between 0 and n */
 int genInt(RNG r, long n) {
-  return gsl_rng_uniform_int(r, to!int(n+1));
+  return gsl_rng_uniform_int(r, to!int(n+1)).to!int;
 }
 
 int genInt(RNG r, int n) {
-  return gsl_rng_uniform_int(r, n+1);
+  return gsl_rng_uniform_int(r, to!int(n+1)).to!int;
 }
 
 /* Draw an integer between n0 and n1 inclusive */
