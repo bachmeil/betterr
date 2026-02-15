@@ -4,15 +4,25 @@ I've made this repository available to share with others how I use D as a "bette
 
 The name "better R" is loosely inspired by [Better C](https://dlang.org/spec/betterc.html). The idea is that R is fully integrated into your D program, giving you access to everything in R, and making it possible to pass data between the two languages, but allowing you the option to improve upon the way R does things as much as you'd like. In some sense, R is a proper subset of D.
 
-Feel free to use it, but things might break. There's no intention of turning this into a Dub package; I don't have time to maintain such a thing. Since it's open source, anyone that wants to is free to do so.
+The project has since expanded to include things unrelated to R. Currently, that includes random number generation using the GSL random distributions (parallel if desired, with no dependency on GSL) and a standalone matrix library (only dependency is OpenBLAS). Gretl bindings will eventually be added. Although these additional libraries can be used with or without R, they allow for interoperability with R, should you want to go that route rather than as standalone libraries.
 
 # Are You Using This Project?
 
-If so, please create a discussion topic to let me know. I'm not aware of anyone else ever having used this project for anything meaningful. The future of D, unfortunately, is not bright. I had initially started this project for my own use, with the goal of eventually being able to write a library of D functions that coauthors and students could call, even if they don't know anything about D. I don't have time to support Windows and Mac. Yet those are the dominant OSes among academic economists. I've stopped recommending D to grad students, instead telling them to use a different language, the name of which is irrelevant.
+I'm not aware of anyone else ever having used this project for anything meaningful. If you do, I'd appreciate it if you'd open a discussion and let me know about it. At this point, the development status is "whatever I'm in the mood to do, which might be nothing". That's easy to do when your project has no outside users.
 
-At this point, the development status is "anything I use and anything I find cool". *But if there are actually users with real use cases, that could change.*
+# Project Updates
 
-# Recent changes
+February 14, 2026: Development continues, but the recent work I've done is too preliminary to merge here. A partial list includes:
+
+- Eliminating the RInside dependency. D can handle everything fine.
+- Changes to the calling of R functions using strings. That adds significant parsing overhead. I don't know if the "significant" overhead matters, but it feels good to improve efficiency. It also feels cleaner this way.
+- A clean way to turn R packages into D modules.
+- A less awkward way to pass D functions to R compared with the approach I'm using now. One thing I find interesting about this is that it makes it much simpler to extend R with D functions on Windows. D is part of the MSVC ecosystem and R is part of the mingw ecosystem. This opens the door to using anything from the MSVC ecosystem as long as it can be called from D.
+- I want to integrate my Gretl bindings/wrappers into this project. Although that's independent of R, and you could completely skip the R if you used Gretl (that's why it's been its own project), it feels like it should be part of betterr. It's all part of econometrics/statistics/data science in D.
+- Improving the usability of random number generation with the standalone GSL random number generators and the standalone matrix libraries that are compiled with ImportC.
+- Documentation and examples. AI should help with this.
+
+When will these things show up? I have no idea. My goal is to turn D into a complete solution for analyzing data. That's a big undertaking for someone working on this an hour here and an hour there.
 
 September 25, 2025: No big news to report. Posting this to let the world know this project is still active. I continue to use it for my own research. The total number of known users other than myself remains zero. Same for the total number of users that have reported they'd like to use betterr on Windows or Mac. As a result, I continue to work only on the things I find useful or interesting, and have no plans at this time to make it work on a non-Linux OS.
 
