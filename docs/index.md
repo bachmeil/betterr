@@ -53,6 +53,10 @@ does what you need. You have to link to shared libraries. I had to
 learn how the R internals work in order to build the lowest-level foundation
 for interoperability.
 
+# Updates
+
+I post periodic project updates [on the repo landing page](https://github.com/bachmeil/betterr). This page is unlikely to change much, and that's by design, not because the project is stale.
+
 # Data Sharing
 
 The starting point for interoperability is data sharing. I
