@@ -12,6 +12,12 @@ I'm not aware of anyone else ever having used this project for anything meaningf
 
 # Project Updates
 
+August 18, 2026: I haven't pushed any new work to the repo in quite a while, but there have been changes. The biggest is that I've been porting GSL to D. It's true that I broke out some parts of GSL that could be compiled with ImportC. It works (there's an example) for what that's worth. One limitation is that it isn't going to compile on Windows. Another is that it would be painful to convert any additional GSL functionality. This led me to start porting GSL to 100% D code. Once I wrote my skill file, local AI models and cheap cloud AI providers did a good enough job on the first pass that it removed a lot of the pain from the process, allowing me to focus on the edge cases.
+
+Random number generation from all provided distributions, including the multivariate distributions, is working. Big chunks of the matrix, vector, linear algebra, and special functions libraries are working.
+
+None of this has been released. Since I'm the only user of this project, there should be no complaints.
+
 February 14, 2026: Development continues, but the recent work I've done is too preliminary to merge here. A partial list includes:
 
 - Eliminating the RInside dependency. D can handle everything fine.
